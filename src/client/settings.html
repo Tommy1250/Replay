@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Settings</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        body {
+            background-color: rgb(28, 25, 25);
+            color: white;
+        }
+    </style>
+    <script src="settings.js" defer></script>
+</head>
+
+<body>
+    <form class="fixed top-1 left-1" id="main">
+        <div>
+            <h1>Discord:</h1>
+            <input id="discord" type="checkbox">
+            <label for="discord" id="discordstatus"></label>
+        </div>
+        <div>
+            <h1>Tray:</h1>
+            <input id="tray" type="checkbox">
+            <label for="tray" id="traystatus"></label>
+        </div>
+        <div>
+            <h1>Auto Update:</h1>
+            <input id="autoupdate" type="checkbox">
+            <label for="autoupdate" id="updatestatus"></label>
+        </div>
+        <br>
+        <div>
+            <h1>Control Server</h1>
+            <input id="server" type="checkbox">
+            <label for="server" id="serverstatus"></label>
+            <input type="number" id="port" placeholder="input an avalable port here" min="1" max="65535" class="text-black rounded-md border-2 border-black overflow-hidden pr-6 w-full">
+            <h1 id="serveradress"></h1>
+        </div>
+        <br>
+        <div>
+            <label for="folder">Music Folder Location</label>
+            <input id="folder" type="text" readonly class="text-black rounded-md border-2 border-black overflow-hidden pr-6 w-full">
+        </div>
+        <div>
+            <label for="lyrics">Lyrics Folder Location</label>
+            <input id="lyrics" type="text" readonly class="text-black rounded-md border-2 border-black overflow-hidden pr-6 w-full">
+        </div>
+        <input type="submit" value="Submit" class=" fixed right-1 py-[0.5] px-[0.5] border rounded-md border-white bg-white text-black hover:border-black hover:text-white hover:bg-black">
+    </form>
+    <footer class="fixed bottom-1 left-1">All Settings Require Application Restart</footer>
+</body>
+
+</html>

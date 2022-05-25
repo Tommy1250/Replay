@@ -1,0 +1,4 @@
+node_modules
+src/saves/ytkey.txt
+.env
+release-builds

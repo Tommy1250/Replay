@@ -1,0 +1,607 @@
+const {
+	app,
+	BrowserWindow,
+	ipcMain,
+	dialog,
+	Tray,
+	Menu,
+	shell
+} = require('electron');
+const path = require('path');
+const fs = require("fs");
+
+const iconpath = path.join(__dirname, 'favicon.ico');
+
+let tray = null;
+
+let lyrics;
+
+require("dotenv").config();
+
+const {
+	discordLogin,
+	changeActivity,
+	stopActivity
+} = require("./discord")
+discordLogin();
+
+/**
+ * @type {BrowserWindow}
+ */
+let mainWindow;
+
+/**
+ * @type {BrowserWindow}
+ */
+let lyricsWindow;
+
+/**
+ * @type {BrowserWindow}
+ */
+let addWindow;
+
+/**
+ * @type {BrowserWindow}
+ */
+let settingsWindow;
+
+const createWindow = () => {
+	// Create the browser window.
+	mainWindow = new BrowserWindow({
+		width: 1280,
+		height: 720,
+		webPreferences: {
+			nodeIntegration: true,
+			nodeIntegrationInWorker: true,
+			nodeIntegrationInSubFrames: true,
+			enableRemoteModule: true,
+			contextIsolation: false //required flag
+		}
+	});
+
+	// and load the index.html of the app.
+	//mainWindow.setMenu(null);
+
+	//mainWindow.webContents.openDevTools();
+	mainWindow.loadFile(path.join(__dirname, 'client/index.html'));
+	mainWindow.setIcon(iconpath);
+};
+
+const savesPath = path.join(app.getPath("userData"), "saves");
+
+//compare the current version with the version in the saves folder
+if (fs.existsSync(savesPath)) {
+	const savesVersion = JSON.parse(fs.readFileSync(path.join(savesPath, "version.json"), "utf-8"));
+	const appSaverVersion = JSON.parse(fs.readFileSync(path.join(__dirname, "saves/version.json"), "utf-8"));
+
+	if (parseInt(savesVersion.version) < parseInt(appSaverVersion.version)) {
+		//if the version is different, delete the saves folder
+		fs.rmSync(savesPath, {
+			recursive: true
+		});
+
+		//create the saves folder again with the new version
+		fs.mkdirSync(savesPath);
+		fs.readdirSync(path.join(__dirname, "saves")).forEach(file => {
+			fs.copyFileSync(path.join(__dirname, "saves/" + file), path.join(savesPath, file));
+		});
+	}
+} else {
+	fs.mkdirSync(savesPath);
+	fs.readdirSync(path.join(__dirname, "saves")).forEach(file => {
+		fs.copyFileSync(path.join(__dirname, "saves/" + file), path.join(savesPath, file));
+	});
+}
+
+let settingsChanged = false;
+
+//get the settings
+const settings = JSON.parse(fs.readFileSync(path.join(savesPath, "settings.json"), "utf-8"));
+
+ipcMain.on("settingsChanged", (event, arg) => {
+	settingsChanged = true;
+});
+
+// This method will be called when Electron has finished
+// initialization and is ready to create browser windows.
+// Some APIs can only be used after this event occurs.
+app.on('ready', () => {
+	if(settings["update"].status === "1"){
+		require('update-electron-app')({
+			repo: "Tommy1250/Replay",
+			updateInterval: "1 hour"
+		});
+	}
+
+	const menuTemplate = [{
+			label: 'File',
+			submenu: [{
+					label: "Choose Music Folder",
+					click: async function () {
+						const {
+							canceled,
+							filePaths
+						} = await dialog.showOpenDialog({
+							properties: ['openDirectory']
+						})
+
+						if (!canceled) {
+							if (filePaths) {
+								console.log(filePaths[0]);
+								mainWindow.webContents.send("folder", filePaths[0]);
+
+								if (menuTemplate[3].submenu[0].label === "Open Music Folder") {
+									menuTemplate[3].submenu[0] = {
+										label: "Open Music Folder",
+										click: () => {
+											shell.openPath(filePaths[0]);
+										}
+									}
+								} else {
+									menuTemplate[3].submenu.unshift({
+										label: "Open Music Folder",
+										click: () => {
+											shell.openPath(filePaths[0]);
+										}
+									})
+								}
+
+								const menu2 = Menu.buildFromTemplate(menuTemplate);
+								Menu.setApplicationMenu(menu2);
+							}
+						}
+					}
+				},
+				{
+					label: "Choose Lyrics Folder",
+					click: async function () {
+						const {
+							canceled,
+							filePaths
+						} = await dialog.showOpenDialog({
+							properties: ['openDirectory']
+						})
+
+						if (!canceled) {
+							if (filePaths) {
+								console.log(filePaths[0]);
+								mainWindow.webContents.send("lyricsFolder", filePaths[0]);
+
+								if (menuTemplate[3].submenu[1].label === "Open Lyrics Folder") {
+									menuTemplate[3].submenu[1] = {
+										label: "Open Lyrics Folder",
+										click: () => {
+											shell.openPath(filePaths[0]);
+										}
+									}
+								} else {
+									if (menuTemplate[3].submenu[1]) {
+										menuTemplate[3].submenu.splice(1, 0, {
+											label: "Open Lyrics Folder",
+											click: () => {
+												shell.openPath(filePaths[0]);
+											}
+										})
+									} else {
+										menuTemplate[3].submenu.unshift({
+											label: "Open Lyrics Folder",
+											click: () => {
+												shell.openPath(filePaths[0]);
+											}
+										})
+									}
+								}
+
+								const menu2 = Menu.buildFromTemplate(menuTemplate);
+								Menu.setApplicationMenu(menu2);
+							}
+						}
+					}
+				},
+				{
+					label: "Refresh Library",
+					click: () => {
+						mainWindow.webContents.send("refresh");
+					}
+				},
+				{
+					label: "Add Songs",
+					click: () => {
+						if (!addWindow) {
+							addWindow = new BrowserWindow({
+								width: 800,
+								height: 600,
+								webPreferences: {
+									nodeIntegration: true,
+									contextIsolation: false
+								}
+							});
+
+							//addWindow.webContents.openDevTools();
+							addWindow.loadFile(path.join(__dirname, "client/add.html"));
+							addWindow.setMenu(null);
+							addWindow.setIcon(iconpath);
+							addWindow.on("closed", () => {
+								//emit an event to the main window
+								mainWindow.webContents.send("refresh")
+
+								addWindow.destroy();
+								addWindow = null;
+							});
+						}
+					}
+				},
+				{
+					label: 'Quit',
+					click: function () {
+						app.quit();
+					},
+				}
+			]
+		},
+		{
+			label: "Song",
+			submenu: [{
+					label: "Lyrics",
+					click: () => {
+						if (!lyricsWindow) {
+							lyricsWindow = new BrowserWindow({
+								width: 400,
+								height: 720,
+								webPreferences: {
+									nodeIntegration: true,
+									contextIsolation: false
+								}
+							});
+
+							lyricsWindow.loadFile(path.join(__dirname, "client/lyrics.html"));
+							lyricsWindow.setMenu(null);
+							lyricsWindow.setIcon(iconpath);
+
+							lyricsWindow.webContents.send("lyrics", lyrics);
+
+							lyricsWindow.on("closed", () => {
+								lyricsWindow.destroy();
+								lyricsWindow = null;
+							});
+						}
+					}
+				},
+				{
+					label: "Next Song",
+					click: function () {
+						mainWindow.webContents.send("next");
+					}
+				},
+				{
+					label: "Previous Song",
+					click: function () {
+						mainWindow.webContents.send("prev");
+					}
+				},
+				{
+					label: "Play",
+					click: function () {
+						mainWindow.webContents.send("play");
+					}
+				},
+				{
+					label: "Pause",
+					click: function () {
+						mainWindow.webContents.send("pause");
+					}
+				}
+			]
+		},
+		{
+			label: "settings",
+			click: () => {
+				if (!settingsWindow) {
+					settingsWindow = new BrowserWindow({
+						width: 800,
+						height: 600,
+						webPreferences: {
+							nodeIntegration: true,
+							contextIsolation: false
+						}
+					});
+
+					settingsWindow.loadFile(path.join(__dirname, "client/settings.html"));
+					settingsWindow.setMenu(null);
+					settingsWindow.setIcon(iconpath);
+
+					settingsWindow.on("closed", () => {
+						settingsWindow.destroy();
+						settingsWindow = null;
+						if(settingsChanged){
+							const dialogOpts = {
+								type: 'info',
+								buttons: ['Restart', 'Later'],
+								title: 'Apply Settings',
+								detail: 'You have unsaved changes. Would you like to restart the app to apply these changes?',
+								icon: path.join(__dirname, "favicon.ico")
+							}
+							dialog.showMessageBox(dialogOpts).then((returnValue) => {
+								if (returnValue.response === 0) {
+									app.relaunch();
+									app.quit();
+								} else {
+									settingsChanged = false;
+									dialog.showMessageBoxSync({
+										title: 'Info',
+										message: 'Settings have not been applied.\nRestart the app at any time to apply changes.'
+									})
+								}
+							})
+						}
+					});
+				}
+			},
+		},
+		{
+			label: "Info",
+			submenu: [{
+				label: "About",
+				click: () => {
+					let aboutWindow = new BrowserWindow({
+						width: 400,
+						height: 400
+					})
+
+					aboutWindow.loadFile(path.join(__dirname, "client/info.html"));
+					aboutWindow.setMenu(null);
+					aboutWindow.setIcon(iconpath);
+					aboutWindow.on("closed", () => {
+						aboutWindow.destroy();
+						aboutWindow = null;
+					})
+				}
+			}]
+		}
+	]
+
+	const lyricsFolderLocation = fs.readFileSync(path.join(savesPath, "lyrics.txt"), "utf-8");
+	if (lyricsFolderLocation && lyricsFolderLocation !== "") {
+		if (fs.existsSync(lyricsFolderLocation)) {
+			menuTemplate[3].submenu.unshift({
+				label: "Open Lyrics Folder",
+				click: () => {
+					shell.openPath(lyricsFolderLocation);
+				}
+			}, )
+		}
+	}
+
+	const folderlocation = fs.readFileSync(path.join(savesPath, "folder.txt"), "utf8")
+	if (folderlocation && folderlocation !== "") {
+		if (fs.existsSync(folderlocation)) {
+			menuTemplate[3].submenu.unshift({
+				label: "Open Music Folder",
+				click: () => {
+					shell.openPath(folderlocation);
+				}
+			})
+		}
+	}
+
+	if (settings["tray"].status === "1") {
+		tray = new Tray(iconpath);
+
+		const trayTemplate = [{
+				label: 'OpenApp',
+				click: function () {
+					if (BrowserWindow.getAllWindows().length === 0) {
+						createWindow();
+					} else {
+						BrowserWindow.getAllWindows()[0].show();
+					}
+				}
+			},
+			{
+				label: 'Music Control',
+				submenu: [{
+						label: "Next Song",
+						click: function () {
+							mainWindow.webContents.send("next");
+						}
+					},
+					{
+						label: "Previous Song",
+						click: function () {
+							mainWindow.webContents.send("prev");
+						}
+					},
+					{
+						label: "Play",
+						click: function () {
+							mainWindow.webContents.send("play");
+						}
+					},
+					{
+						label: "Pause",
+						click: function () {
+							mainWindow.webContents.send("pause");
+						}
+					}
+				]
+			},
+			{
+				label: 'Quit',
+				click: function () {
+					app.quit();
+				}
+			}
+		];
+
+		const menu = Menu.buildFromTemplate(trayTemplate);
+
+		tray.setContextMenu(menu);
+		tray.setTitle("Replay Toolbox");
+		tray.setToolTip("Replay Toolbox");
+		tray.on("click", function () {
+			if (BrowserWindow.getAllWindows().length === 0) {
+				createWindow();
+			} else {
+				BrowserWindow.getAllWindows()[0].show();
+			}
+		});
+	}
+
+	const menu2 = Menu.buildFromTemplate(menuTemplate);
+	Menu.setApplicationMenu(menu2);
+
+	createWindow();
+});
+
+// Quit when all windows are closed, except on macOS. There, it's common
+// for applications and their menu bar to stay active until the user quits
+// explicitly with Cmd + Q.
+app.on('window-all-closed', () => {
+	if (settings["tray"].status === "0") {
+		app.quit()
+	} else {
+		BrowserWindow.getAllWindows().forEach(win => {
+			win.close();
+		});
+	}
+});
+
+app.on('activate', () => {
+	// On OS X it's common to re-create a window in the app when the
+	// dock icon is clicked and there are no other windows open.
+	if (BrowserWindow.getAllWindows().length === 0) {
+		createWindow();
+	}
+});
+
+ipcMain.on("getFolder", (event, arg) => {
+	//send the savesPath to the requestor
+	event.sender.send("savesFolder", savesPath);
+});
+
+ipcMain.on("updateLyrics", (event, arg) => {
+	if (lyricsWindow) {
+		lyricsWindow.webContents.send("lyrics", arg);
+	}
+
+	lyrics = arg;
+});
+
+ipcMain.on("change", (event, arg) => {
+	changeActivity(arg.name, arg.playlist);
+});
+
+ipcMain.on("play", (event, arg) => {
+	changeActivity(arg.name, arg.playlist);
+});
+
+ipcMain.on("pause", (event, arg) => {
+	stopActivity()
+});
+
+// In this file you can include the rest of your app's specific main process
+// code. You can also put them in separate files and import them here.
+if (settings["server"].enabled === "1") {
+	const express = require("express");
+	const app = express();
+
+	const {
+		getGallery
+	} = require("./gallery");
+
+	app.use(express.json());
+	app.use(express.urlencoded({
+		extended: false
+	}))
+
+	const http = require('http');
+	const server = http.createServer(app);
+	const {
+		Server
+	} = require("socket.io");
+
+	const io = new Server(server);
+
+	app.get("/", (req, res) => {
+		res.sendFile(path.join(__dirname, "server/index.html"));
+	})
+
+	app.get("/script.js", (req, res) => {
+		res.sendFile(path.join(__dirname, "server/script.js"))
+	})
+
+	app.get("/style.css", (req, res) => {
+		res.sendFile(path.join(__dirname, "client/style.css"))
+	})
+
+	app.get("/favicon", (req, res) => {
+		res.sendFile(path.join(__dirname, "favicon.ico"))
+	})
+
+	app.get("/volume", async (req, res) => {
+		const volumefile = fs.readFileSync(path.join(savesPath, "volume.txt"), "utf-8");
+		const volume = parseFloat(volumefile);
+		return res.status(200).send({
+			volume: volume
+		})
+	})
+
+	let serverSong = JSON.parse(fs.readFileSync(path.join(savesPath, "latest.json"), "utf8"));
+
+	ipcMain.on("changeServer", (event, arg) => {
+		serverSong = arg.current;
+	});
+
+	io.on("connection", socket => {
+		console.log(`${socket.id} just connected`)
+
+		socket.on("get-gallery", (cb) => {
+			getGallery(fs.readFileSync(path.join(savesPath, "folder.txt"), "utf-8"))
+				.then(songs => cb(songs))
+			console.log(`${socket.id} requested the gallery`);
+		})
+
+		socket.on("song-change", (currentsong) => {
+			mainWindow.webContents.send("change", currentsong);
+			serverSong = currentsong;
+		})
+
+		socket.on("get-latest", (cb) => {
+			if (!serverSong) return cb({
+				playlist: "random",
+				number: 0
+			});
+			cb(serverSong)
+		})
+
+		socket.on("pause", () => {
+			mainWindow.webContents.send("pause");
+			console.log(`${socket.id} paused the song`);
+		})
+
+		socket.on("play", () => {
+			mainWindow.webContents.send("play");
+			console.log(`${socket.id} played the song`);
+		})
+
+		socket.on("volume", (volume) => {
+			mainWindow.webContents.send("volume", volume);
+		})
+
+		socket.on("seek", (time) => {
+			mainWindow.webContents.send("seek", time);
+		})
+
+		socket.on("mute", () => {
+			mainWindow.webContents.send("mute");
+		})
+
+		socket.on("disconnect", () => {
+			console.log(`${socket.id} disconnected`);
+		})
+	})
+
+	server.listen(settings["server"].port, () => {
+		console.log(`listening on port ${settings["server"].port}`)
+	})
+}
