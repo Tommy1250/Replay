@@ -1,7 +1,7 @@
 {
   "name": "replay",
   "productName": "Replay",
-  "version": "1.5.0",
+  "version": "1.5.1",
   "description": "A Muisc App Built By Tommy",
   "main": "./src/index.js",
   "scripts": {
@@ -10,7 +10,7 @@
     "css": "tailwindcss -i ./src/css/style.css -o ./src/client/style.css --watch"
   },
   "keywords": [],
-  "license": "ISC",
+  "license": "GNU GPL v3",
   "author": {
     "name": "Tommy1250",
     "email": "59102097+Tommy1250@users.noreply.github.com"
