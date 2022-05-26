@@ -69,6 +69,8 @@ const createWindow = () => {
 
 const savesPath = path.join(app.getPath("userData"), "saves");
 
+let settings;
+
 //compare the current version with the version in the saves folder
 if (fs.existsSync(savesPath)) {
 	const savesVersion = JSON.parse(fs.readFileSync(path.join(savesPath, "version.json"), "utf-8"));
@@ -83,20 +85,21 @@ if (fs.existsSync(savesPath)) {
 		//create the saves folder again with the new version
 		fs.mkdirSync(savesPath);
 		fs.readdirSync(path.join(__dirname, "saves")).forEach(file => {
-			fs.copyFileSync(path.join(__dirname, "saves/" + file), path.join(savesPath, file));
+			if(!file.includes("example"))
+				fs.copyFileSync(path.join(__dirname, "saves/" + file), path.join(savesPath, file));
 		});
 	}
+	settings = JSON.parse(fs.readFileSync(path.join(savesPath, "settings.json"), "utf-8"));
 } else {
 	fs.mkdirSync(savesPath);
 	fs.readdirSync(path.join(__dirname, "saves")).forEach(file => {
-		fs.copyFileSync(path.join(__dirname, "saves/" + file), path.join(savesPath, file));
+		if(!file.includes("example"))
+			fs.copyFileSync(path.join(__dirname, "saves/" + file), path.join(savesPath, file));
 	});
+	settings = JSON.parse(fs.readFileSync(path.join(savesPath, "settings.json"), "utf-8"));
 }
 
 let settingsChanged = false;
-
-//get the settings
-const settings = JSON.parse(fs.readFileSync(path.join(savesPath, "settings.json"), "utf-8"));
 
 ipcMain.on("settingsChanged", (event, arg) => {
 	settingsChanged = true;

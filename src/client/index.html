@@ -19,18 +19,23 @@
 
     .main {
         display: grid;
-        padding: .5rem;
-        margin-bottom: 5.2vh;
+        padding: .8rem;
+        margin-bottom: 12vh;
     }
 
     .player {
+        padding: .4rem;
         display: grid;
         bottom: 0;
         position: fixed;
         width: 100%;
-        height: 6vh;
+        height: auto;
         background-color: rgb(25, 25, 25);
-        grid-template-columns: 1fr 3fr 1fr ;
+        grid-template-columns: 1fr 3fr 1fr;
+    }
+
+    .player div.up-right{
+        grid-column: span 3;
     }
 
     .player > div .control {
@@ -86,35 +91,6 @@
 <body>
     <div class="main">
         <!-- <h1 id="userId" class="text-3xl font-bold"></h1> -->
-        <div class="up-right">
-            <h2 id="np" class="text-2xl font-bold"></h2>
-        </div>
-
-        <div class="player">
-            <div>
-                <button id="prev"
-                class="control px-3 py-[0.7] text-sm text-white font-semibold rounded-full border border-white hover:text-black hover:bg-purple-600 hover:border-transparent focus:outline-none focus:ring-2 focus:ring-purple-600 focus:ring-offset-2 text-center overflow-hidden">Previous</button>
-                <button id="pause"
-                    class="control px-3 py-[0.7] text-sm text-blue-600 font-semibold rounded-full border border-blue-200 hover:text-white hover:bg-blue-600 hover:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2 text-center overflow-hidden">
-                    Pause
-                </button>
-                <button id="next"
-                    class="control px-3 py-[0.7] text-sm text-white font-semibold rounded-full border border-white hover:text-black hover:bg-purple-600 hover:border-transparent focus:outline-none focus:ring-2 focus:ring-purple-600 focus:ring-offset-2 text-center overflow-hidden">Next</button>
-            </div>
-            
-            <div>
-                <input type="range" step="0.01" value="0" max="100" id="timeline" class="timeline">
-                <label id="time" for="timeline">0:10/2:22</label>
-            </div>
-
-            <div>
-                <input type="range" min="1" max="100" id="volume" class="volume">
-                <button id="davolume"></button>
-            </div>
-        </div>
-
-        <br>
-
         <div class="left">
             <div id="playlists"></div>
             <div id="songs" style="visibility: hidden;">
@@ -122,10 +98,36 @@
                     class="px-4 py-1 text-sm text-red-600 font-semibold rounded-full border border-red-200 hover:text-white hover:bg-red-600 hover:border-transparent focus:outline-none focus:ring-2 focus:ring-red-600 focus:ring-offset-2">goback</button>
                 <br>
             </div>
+        </div>    
+    </div>
+    <div class="player">
+        <div class="up-right">
+            <h2 id="np" class="text-2xl font-bold"></h2>
         </div>
 
-        <audio id="player" autoplay class="player">This browser doesn't support le pler</audio>
+        <div>
+            <button id="prev"
+            class="control px-3 py-[0.7] text-sm text-white font-semibold rounded-full border border-white hover:text-black hover:bg-purple-600 hover:border-transparent focus:outline-none focus:ring-2 focus:ring-purple-600 focus:ring-offset-2 text-center overflow-hidden">Previous</button>
+            <button id="pause"
+                class="control px-3 py-[0.7] text-sm text-blue-600 font-semibold rounded-full border border-blue-200 hover:text-white hover:bg-blue-600 hover:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2 text-center overflow-hidden">
+                Pause
+            </button>
+            <button id="next"
+                class="control px-3 py-[0.7] text-sm text-white font-semibold rounded-full border border-white hover:text-black hover:bg-purple-600 hover:border-transparent focus:outline-none focus:ring-2 focus:ring-purple-600 focus:ring-offset-2 text-center overflow-hidden">Next</button>
+        </div>
+        
+        <div>
+            <input type="range" step="0.01" value="0" max="100" id="timeline" class="timeline">
+            <label id="time" for="timeline">0:10/2:22</label>
+        </div>
+
+        <div>
+            <input type="range" min="1" max="100" id="volume" class="volume">
+            <button id="davolume"></button>
+        </div>
     </div>
+
+    <audio id="player" autoplay class="player">This browser doesn't support le pler</audio>
 </body>
 
 </html>

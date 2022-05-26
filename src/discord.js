@@ -12,9 +12,11 @@ const path = require("path");
 
 const {app} = require("electron")
 
+let activate = "1";
 const savesPath = path.join(app.getPath("userData"), "saves");
-const activate = JSON.parse(fs.readFileSync(path.join(savesPath, "settings.json"), "utf-8")).discord.status;
-
+if(fs.existsSync(savesPath)){
+    activate = JSON.parse(fs.readFileSync(path.join(savesPath, "settings.json"), "utf-8")).discord.status;
+}
 function discordLogin(){
     if (activate === "1") {
         try {
