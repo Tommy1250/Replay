@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>Rename Song</title>
+    <style>
+        body {
+            background-color: rgb(28, 25, 25);
+            color: white;
+            padding: .4rem;
+        }
+        .songname {
+            width: 100%;
+            box-sizing: content-box;
+            overflow-wrap: break-word;
+            white-space: nowrap;
+        }
+    </style>
+    <script src="rename.js" defer></script>
+</head>
+<body>
+    <form id="form">
+        <input type="text" class="songname" id="name" placeholder="input the new name here">
+        <button type="submit">Confirm</button>
+    </form>
+</body>
+</html>

@@ -45,6 +45,11 @@ let addWindow;
  */
 let settingsWindow;
 
+/**
+ * @type {BrowserWindow}
+ */
+let renameWindow;
+
 const createWindow = () => {
 	// Create the browser window.
 	mainWindow = new BrowserWindow({
@@ -62,7 +67,7 @@ const createWindow = () => {
 	// and load the index.html of the app.
 	//mainWindow.setMenu(null);
 
-	//mainWindow.webContents.openDevTools();
+	mainWindow.webContents.openDevTools();
 	mainWindow.loadFile(path.join(__dirname, 'client/index.html'));
 	mainWindow.setIcon(iconpath);
 };
@@ -85,7 +90,7 @@ if (fs.existsSync(savesPath)) {
 		//create the saves folder again with the new version
 		fs.mkdirSync(savesPath);
 		fs.readdirSync(path.join(__dirname, "saves")).forEach(file => {
-			if(!file.includes("example"))
+			if (!file.includes("example"))
 				fs.copyFileSync(path.join(__dirname, "saves/" + file), path.join(savesPath, file));
 		});
 	}
@@ -93,7 +98,7 @@ if (fs.existsSync(savesPath)) {
 } else {
 	fs.mkdirSync(savesPath);
 	fs.readdirSync(path.join(__dirname, "saves")).forEach(file => {
-		if(!file.includes("example"))
+		if (!file.includes("example"))
 			fs.copyFileSync(path.join(__dirname, "saves/" + file), path.join(savesPath, file));
 	});
 	settings = JSON.parse(fs.readFileSync(path.join(savesPath, "settings.json"), "utf-8"));
@@ -109,7 +114,7 @@ ipcMain.on("settingsChanged", (event, arg) => {
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
 app.on('ready', () => {
-	if(settings["update"].status === "1"){
+	if (settings["update"].status === "1") {
 		require('update-electron-app')({
 			repo: "Tommy1250/Replay",
 			updateInterval: "1 hour"
@@ -244,32 +249,7 @@ app.on('ready', () => {
 		},
 		{
 			label: "Song",
-			submenu: [{
-					label: "Lyrics",
-					click: () => {
-						if (!lyricsWindow) {
-							lyricsWindow = new BrowserWindow({
-								width: 400,
-								height: 720,
-								webPreferences: {
-									nodeIntegration: true,
-									contextIsolation: false
-								}
-							});
-
-							lyricsWindow.loadFile(path.join(__dirname, "client/lyrics.html"));
-							lyricsWindow.setMenu(null);
-							lyricsWindow.setIcon(iconpath);
-
-							lyricsWindow.webContents.send("lyrics", lyrics);
-
-							lyricsWindow.on("closed", () => {
-								lyricsWindow.destroy();
-								lyricsWindow = null;
-							});
-						}
-					}
-				},
+			submenu: [
 				{
 					label: "Next Song",
 					click: function () {
@@ -316,7 +296,7 @@ app.on('ready', () => {
 					settingsWindow.on("closed", () => {
 						settingsWindow.destroy();
 						settingsWindow = null;
-						if(settingsChanged){
+						if (settingsChanged) {
 							const dialogOpts = {
 								type: 'info',
 								buttons: ['Restart', 'Later'],
@@ -477,18 +457,165 @@ app.on('activate', () => {
 	}
 });
 
+ipcMain.on("makeSongMenu", (event, arg) => {
+	const template = [{
+			label: "Play",
+			click: () => {
+				mainWindow.webContents.send("change", {
+					number: arg.number,
+					playlist: arg.playlist
+				});
+			}
+		},
+		{
+			label: "Rename",
+			click: () => {
+				if (!renameWindow) {
+					renameWindow = new BrowserWindow({
+						width: 400,
+						height: 100,
+						webPreferences: {
+							nodeIntegration: true,
+							contextIsolation: false
+						}
+					});
+
+					renameWindow.loadFile(path.join(__dirname, "client/rename.html"));
+					renameWindow.setMenu(null);
+					renameWindow.setIcon(iconpath);
+					renameWindow.webContents.send("song", {
+						songName: arg.name,
+						playlistName: arg.playlist,
+					});
+
+					renameWindow.on("closed", () => {
+						renameWindow.destroy();
+						renameWindow = null;
+					})
+				}
+			}
+		},
+		{
+			label: "Delete",
+			click: () => {
+				const dialogOpts = {
+					type: 'info',
+					buttons: ['Yes', 'No'],
+					title: 'Delete File',
+					detail: `Are you sure you want to delete the file: ${arg.name}?`,
+					icon: path.join(__dirname, "favicon.ico")
+				}
+				dialog.showMessageBox(dialogOpts).then((returnValue) => {
+					if (returnValue.response === 0) {
+						deleteSong(arg.name, arg.playlist);
+					}
+				})
+				
+			}
+		}
+	]
+	const menu = Menu.buildFromTemplate(template);
+	menu.popup();
+});
+
+ipcMain.on("renameSong", (event, arg) => {
+	renameWindow.close();
+	renameSong(arg.songName, arg.playlistName, arg.newName);
+});
+
+/**
+ * 
+ * @param {string} songName 
+ * @param {string} playlistName 
+ * @param {string} newName 
+ */
+function renameSong(songName, playlistName, newName) {
+	let folder = fs.readFileSync(path.join(savesPath, "folder.txt"), "utf-8");
+	let lyricsFolder = fs.readFileSync(path.join(savesPath, "lyrics.txt"), "utf-8");
+
+	if (playlistName === "random") {
+		if (folder && folder !== "") {
+			if (fs.existsSync(folder)) {
+				if (fs.existsSync(path.join(folder, songName))) {
+					const format = path.extname(songName);
+
+					fs.renameSync(path.join(folder, songName), path.join(folder, `${newName}${format}`));
+					mainWindow.webContents.send("refresh");
+
+					if (lyricsFolder && lyricsFolder !== "") {
+						if (fs.existsSync(lyricsFolder)) {
+				
+							if (fs.existsSync(path.join(lyricsFolder, `${songName.replace(format, "")}.txt`))) {
+								fs.renameSync(path.join(lyricsFolder, `${songName.replace(format, "")}.txt`), path.join(lyricsFolder, `${newName.replace(format, "")}.txt`));
+							}
+						}
+					}
+				}
+			}
+		}
+	} else {
+		if (folder && folder !== "") {
+			if (fs.existsSync(folder)) {
+				if (fs.existsSync(path.join(folder, playlistName))) {
+					if (fs.existsSync(path.join(folder, playlistName, songName))) {
+						const format = path.extname(songName);
+
+						fs.renameSync(path.join(folder, playlistName, songName), path.join(folder, playlistName, `${newName}${format}`));
+						mainWindow.webContents.send("refresh");
+
+						if (lyricsFolder && lyricsFolder !== "") {
+							if (fs.existsSync(lyricsFolder)) {
+					
+								if (fs.existsSync(path.join(lyricsFolder, `${songName.replace(format, "")}.txt`))) {
+									fs.renameSync(path.join(lyricsFolder, `${songName.replace(format, "")}.txt`), path.join(lyricsFolder, `${newName.replace(format, "")}.txt`));
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+}
+
+/**
+ * 
+ * @param {string} songName 
+ * @param {string} playlistName 
+ */
+function deleteSong(songName, playlistName) {
+	let folder = fs.readFileSync(path.join(savesPath, "folder.txt"), "utf-8");
+
+	if (playlistName === "random") {
+		if (folder && folder !== "") {
+			if (fs.existsSync(folder)) {
+				if (fs.existsSync(path.join(folder, songName))) {
+					
+					fs.rmSync(path.join(folder, songName), {recursive: true});
+					mainWindow.webContents.send("refresh");
+				}
+			}
+		}
+	} else {
+		if (folder && folder !== "") {
+			if (fs.existsSync(folder)) {
+				if (fs.existsSync(path.join(folder, playlistName))) {
+					if (fs.existsSync(path.join(folder, playlistName, songName))) {
+						
+						fs.rmSync(path.join(folder, playlistName, songName), {recursive: true});
+						mainWindow.webContents.send("refresh");
+					}
+				}
+			}
+		}
+	}
+}
+
 ipcMain.on("getFolder", (event, arg) => {
 	//send the savesPath to the requestor
 	event.sender.send("savesFolder", savesPath);
 });
 
-ipcMain.on("updateLyrics", (event, arg) => {
-	if (lyricsWindow) {
-		lyricsWindow.webContents.send("lyrics", arg);
-	}
-
-	lyrics = arg;
-});
 
 ipcMain.on("change", (event, arg) => {
 	changeActivity(arg.name, arg.playlist);

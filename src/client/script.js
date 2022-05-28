@@ -10,10 +10,20 @@ const player = document.getElementById("player");
 const nextbtn = document.getElementById("next");
 const prevbtn = document.getElementById("prev");
 const nowplaying = document.getElementById("np");
+const currnetPlaylist = document.getElementById("currentplaylist");
 
 const pause = document.getElementById("pause");
 const timeline = document.getElementById("timeline");
 const timeValue = document.getElementById("time");
+
+const searchbar = document.getElementById("search");
+const lyricsHTML = document.getElementById("lyrics");
+const savebtn = document.getElementById("savebtn");
+const form = document.getElementById("form");
+
+const genius_key = process.env.GENUIS_KEY;
+const GENIUS = require("genius-lyrics");
+const genius = new GENIUS.Client(genius_key);
 
 /**
  * @type {HTMLInputElement}
@@ -36,6 +46,7 @@ const {
 const {
     ipcRenderer
 } = require("electron");
+
 const path = require("path");
 
 let current = {
@@ -128,6 +139,42 @@ ipcRenderer.on("volume", (event, arg) => {
         volume: arg
     })
 })
+
+savebtn.onclick = () => {
+    savelyrics();
+}
+
+function savelyrics() {
+    const lyricsLocation = fs.readFileSync(path.join(savesPath, "lyrics.txt"), "utf-8");
+    const currentsong = songs.playlists[current.playlist][current.number];
+    const format = path.extname(currentsong);
+
+    if(fs.existsSync(lyricsLocation)){
+        fs.writeFileSync(`${lyricsLocation}/${currentsong.replace(format, "")}.txt`, lyricsHTML.innerText);
+    }else{
+        searchbar.value = "please choose a lyrics folder";
+    }
+}
+
+form.onsubmit = (event) => {
+    event.preventDefault();
+    searchLyrics();
+}
+
+async function searchLyrics() {
+    const search = searchbar.value;
+    if (!search) return;
+    searchbar.value = "";
+    try{
+        const song = await genius.songs.search(search);
+        const lyrics = await song[0].lyrics(false)
+
+        lyricsHTML.innerText = lyrics;
+    }catch (e) {
+        console.log(e);
+        lyricsHTML.innerText = "Song not found!";
+    }
+}
 
 slider.addEventListener("input", () => {
     updatePlayer("volume", {
@@ -253,7 +300,12 @@ function updatePlayer(event, {
         case "change":
             current = songNumber
             nowplaying.innerText = songs.playlists[current.playlist][current.number].replace(".mp3", "").replace(".flac", "");
-
+            nowplaying.onclick = () => {
+                removePlaylist();
+                getplaylist(current.playlist);
+                nodes[current.number * 2].focus();
+            }
+            
             if (current.playlist === "random") {
                 player.src = `${folder}/${songs.playlists[current.playlist][current.number]}`
             } else {
@@ -262,9 +314,9 @@ function updatePlayer(event, {
 
             if(fs.existsSync(`${lyricsFolder}/${songs.playlists[current.playlist][current.number].replace(".mp3", "").replace(".flac", "")}.txt`)) {
                 const dalyrics = fs.readFileSync(`${lyricsFolder}/${songs.playlists[current.playlist][current.number].replace(".mp3", "").replace(".flac", "")}.txt`, "utf-8");
-                ipcRenderer.send("updateLyrics", {name: songs.playlists[current.playlist][current.number].replace(".mp3", "").replace(".flac", ""), lyrics: dalyrics});
+                lyricsHTML.innerText = dalyrics;
             } else {
-                ipcRenderer.send("updateLyrics", {name: songs.playlists[current.playlist][current.number].replace(".mp3", "").replace(".flac", ""), lyrics: "Song doesn't have lyrics!"});
+                lyricsHTML.innerText = "Song doesn't have lyrics!";
             }
             
             fs.writeFileSync(path.join(savesPath, "latest.json"), JSON.stringify(current));
@@ -351,6 +403,14 @@ function getplaylist(plname) {
                 }
             });
         }
+        btn.oncontextmenu = (e) => {
+            console.log("right click on " + btn.textContent);
+            ipcRenderer.send("makeSongMenu", {
+                name: element,
+                playlist: plname,
+                number: i
+            });
+        }
         btn.id = "removable";
         btn.className = "px-4 py-1 text-sm text-purple-600 font-semibold rounded-full border border-purple-200 hover:text-white hover:bg-purple-600 hover:border-transparent focus:outline-none focus:ring-2 focus:ring-purple-600 focus:ring-offset-2"
         htmlsongs.appendChild(btn);
@@ -368,6 +428,7 @@ function getplaylist(plname) {
     btn.id = "removable";
     htmlsongs.appendChild(btn);
     nodes.push(btn);
+    currnetPlaylist.innerText = plname;
     for (let i = 0; i < playlistshtml.length; i++) {
         const element = playlistshtml[i];
         playlist.removeChild(element);
@@ -375,6 +436,11 @@ function getplaylist(plname) {
 }
 
 remover.onclick = () => {
+    removePlaylist();
+}
+
+function removePlaylist() {
+    currnetPlaylist.innerText = "Your Albums"
     for (let i = 0; i < nodes.length; i++) {
         const element = nodes[i];
         if (element.id === "removable") {
@@ -394,6 +460,7 @@ function makegallery() {
     getGallery(folder).then(desongs => {
         songs = desongs;
 
+        removePlaylist();
         playlist.innerHTML = '';
         playlistshtml = [];
     
