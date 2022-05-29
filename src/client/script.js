@@ -16,14 +16,7 @@ const pause = document.getElementById("pause");
 const timeline = document.getElementById("timeline");
 const timeValue = document.getElementById("time");
 
-const searchbar = document.getElementById("search");
 const lyricsHTML = document.getElementById("lyrics");
-const savebtn = document.getElementById("savebtn");
-const form = document.getElementById("form");
-
-const genius_key = process.env.GENUIS_KEY;
-const GENIUS = require("genius-lyrics");
-const genius = new GENIUS.Client(genius_key);
 
 /**
  * @type {HTMLInputElement}
@@ -139,42 +132,6 @@ ipcRenderer.on("volume", (event, arg) => {
         volume: arg
     })
 })
-
-savebtn.onclick = () => {
-    savelyrics();
-}
-
-function savelyrics() {
-    const lyricsLocation = fs.readFileSync(path.join(savesPath, "lyrics.txt"), "utf-8");
-    const currentsong = songs.playlists[current.playlist][current.number];
-    const format = path.extname(currentsong);
-
-    if(fs.existsSync(lyricsLocation)){
-        fs.writeFileSync(`${lyricsLocation}/${currentsong.replace(format, "")}.txt`, lyricsHTML.innerText);
-    }else{
-        searchbar.value = "please choose a lyrics folder";
-    }
-}
-
-form.onsubmit = (event) => {
-    event.preventDefault();
-    searchLyrics();
-}
-
-async function searchLyrics() {
-    const search = searchbar.value;
-    if (!search) return;
-    searchbar.value = "";
-    try{
-        const song = await genius.songs.search(search);
-        const lyrics = await song[0].lyrics(false)
-
-        lyricsHTML.innerText = lyrics;
-    }catch (e) {
-        console.log(e);
-        lyricsHTML.innerText = "Song not found!";
-    }
-}
 
 slider.addEventListener("input", () => {
     updatePlayer("volume", {
@@ -314,8 +271,10 @@ function updatePlayer(event, {
 
             if(fs.existsSync(`${lyricsFolder}/${songs.playlists[current.playlist][current.number].replace(".mp3", "").replace(".flac", "")}.txt`)) {
                 const dalyrics = fs.readFileSync(`${lyricsFolder}/${songs.playlists[current.playlist][current.number].replace(".mp3", "").replace(".flac", "")}.txt`, "utf-8");
+                ipcRenderer.send("updateLyrics", {name: songs.playlists[current.playlist][current.number].replace(path.extname(songs.playlists[current.playlist][current.number]), ""), lyrics: dalyrics});
                 lyricsHTML.innerText = dalyrics;
             } else {
+                ipcRenderer.send("updateLyrics", {name: songs.playlists[current.playlist][current.number].replace(path.extname(songs.playlists[current.playlist][current.number]), ""), lyrics: "Song doesn't have lyrics!"});
                 lyricsHTML.innerText = "Song doesn't have lyrics!";
             }
             
@@ -338,6 +297,10 @@ function updatePlayer(event, {
     }
 
 }
+
+ipcRenderer.on("lyrics", (event, arg) => {
+    lyricsHTML.innerText = arg;
+});
 
 //make an event lestener that listens for the player when it gets muted
 player.onvolumechange = () => {

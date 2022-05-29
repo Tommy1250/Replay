@@ -67,7 +67,7 @@ const createWindow = () => {
 	// and load the index.html of the app.
 	//mainWindow.setMenu(null);
 
-	mainWindow.webContents.openDevTools();
+	//mainWindow.webContents.openDevTools();
 	mainWindow.loadFile(path.join(__dirname, 'client/index.html'));
 	mainWindow.setIcon(iconpath);
 };
@@ -249,7 +249,30 @@ app.on('ready', () => {
 		},
 		{
 			label: "Song",
-			submenu: [
+			submenu: [{
+					label: "Lyrics",
+					click: () => {
+						if (!lyricsWindow) {
+							lyricsWindow = new BrowserWindow({
+								width: 400,
+								height: 720,
+								webPreferences: {
+									nodeIntegration: true,
+									contextIsolation: false
+								}
+							});
+
+							lyricsWindow.loadFile(path.join(__dirname, "client/lyrics.html"));
+							lyricsWindow.setMenu(null);
+							lyricsWindow.setIcon(iconpath);
+
+							lyricsWindow.on("closed", () => {
+								lyricsWindow.destroy();
+								lyricsWindow = null;
+							});
+						}
+					}
+				},
 				{
 					label: "Next Song",
 					click: function () {
@@ -488,6 +511,13 @@ ipcMain.on("makeSongMenu", (event, arg) => {
 						playlistName: arg.playlist,
 					});
 
+					ipcMain.on("getSong", () => {
+						renameWindow.webContents.send("song", {
+							songName: arg.name,
+							playlistName: arg.playlist,
+						});
+					})
+
 					renameWindow.on("closed", () => {
 						renameWindow.destroy();
 						renameWindow = null;
@@ -516,6 +546,20 @@ ipcMain.on("makeSongMenu", (event, arg) => {
 	]
 	const menu = Menu.buildFromTemplate(template);
 	menu.popup();
+});
+
+ipcMain.on("updateLyrics", (event, arg) => {
+	if (lyricsWindow) {
+		lyricsWindow.webContents.send("lyrics", arg);
+	}
+	if (mainWindow)	{
+		mainWindow.webContents.send("lyrics", arg.lyrics);
+	}
+	lyrics = arg;
+});
+
+ipcMain.on("getLyrics", (event, arg) => {
+	lyricsWindow.webContents.send("lyrics", lyrics);
 });
 
 ipcMain.on("renameSong", (event, arg) => {

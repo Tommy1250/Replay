@@ -35,11 +35,11 @@
         grid-template-columns: 1fr 3fr 1fr;
     }
 
-    .player div.up-right{
+    .player div.up-right {
         grid-column: span 3;
     }
 
-    .player > div .control {
+    .player>div .control {
         width: 31%;
     }
 
@@ -102,15 +102,7 @@
                 <br>
             </div>
         </div>
-        <div class="right">
-            <form id="form">
-                <input type="text" required id="search" placeholder="search lyrics" class="text-black">
-                <button type="submit" class="px-3 py-[0.7] text-sm text-blue-600 font-semibold rounded-full border border-blue-200 hover:text-white hover:bg-blue-600 hover:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2">search</button>
-                <button type="button" id="savebtn" class="px-3 py-[0.7] text-sm text-blue-600 font-semibold rounded-full border border-blue-200 hover:text-white hover:bg-blue-600 hover:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2">save lyrics</button>
-                <br>
-            </form>
-            <p id="lyrics" class="text-center"></p>
-        </div>
+        <p id="lyrics" class="text-center"></p>
     </div>
     <div class="player">
         <div class="up-right">
@@ -119,7 +111,7 @@
 
         <div>
             <button id="prev"
-            class="control px-3 py-[0.7] text-sm text-white font-semibold rounded-full border border-white hover:text-black hover:bg-purple-600 hover:border-transparent focus:outline-none focus:ring-2 focus:ring-purple-600 focus:ring-offset-2 text-center overflow-hidden">Previous</button>
+                class="control px-3 py-[0.7] text-sm text-white font-semibold rounded-full border border-white hover:text-black hover:bg-purple-600 hover:border-transparent focus:outline-none focus:ring-2 focus:ring-purple-600 focus:ring-offset-2 text-center overflow-hidden">Previous</button>
             <button id="pause"
                 class="control px-3 py-[0.7] text-sm text-blue-600 font-semibold rounded-full border border-blue-200 hover:text-white hover:bg-blue-600 hover:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2 text-center overflow-hidden">
                 Pause
@@ -127,7 +119,7 @@
             <button id="next"
                 class="control px-3 py-[0.7] text-sm text-white font-semibold rounded-full border border-white hover:text-black hover:bg-purple-600 hover:border-transparent focus:outline-none focus:ring-2 focus:ring-purple-600 focus:ring-offset-2 text-center overflow-hidden">Next</button>
         </div>
-        
+
         <div>
             <input type="range" step="0.01" value="0" max="100" id="timeline" class="timeline">
             <label id="time" for="timeline">0:10/2:22</label>

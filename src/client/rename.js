@@ -19,6 +19,10 @@ ipcRenderer.on("song", (event, song) => {
     console.log(info);
 })
 
+if(!info.songName){
+    ipcRenderer.send("getSong");
+}
+
 form.onsubmit = (event) => {
     event.preventDefault();
     info.newName = songname.value;

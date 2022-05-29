@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lyrics</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="./lyrics.js" defer></script>
+    <style>
+        body{
+            background-color: rgb(28, 25, 25);
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <form id="form">
+        <input type="text" required id="search" placeholder="search lyrics" class="text-black">
+        <button type="submit" class="px-3 py-[0.7] text-sm text-blue-600 font-semibold rounded-full border border-blue-200 hover:text-white hover:bg-blue-600 hover:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2">search</button>
+        <button type="button" id="savebtn" class="px-3 py-[0.7] text-sm text-blue-600 font-semibold rounded-full border border-blue-200 hover:text-white hover:bg-blue-600 hover:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2">save lyrics</button>
+        <br>
+    </form>
+    <p id="lyrics" class="text-center"></p>
+</body>
+</html>
