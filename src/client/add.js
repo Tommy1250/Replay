@@ -194,9 +194,13 @@ async function downloadAudio({
     let thepath = playlist ? `${musicFolder}/${plname}/${changeName(title)}.mp4` : `${musicFolder}/${changeName(title)}.mp4`;
     let path2 = playlist ? `${musicFolder}/${plname}/${changeName(title)}.mp3` : `${musicFolder}/${changeName(title)}.mp3`;
 
-    exec("ffmpeg", async(error, stdout, stderr) => {
+    exec("ffmpeg -version", async(error, stdout, stderr) => {
         console.log("Tring to get ffmpeg")
-        if (stderr || error) {
+
+        console.log(stdout)
+        console.log(stderr)
+
+        if (stderr) {
             console.log("ffmpeg not found");
 
             status.innerText = `ffmpeg not found tring to download via the server`;
