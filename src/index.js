@@ -548,6 +548,10 @@ ipcMain.on("makeSongMenu", (event, arg) => {
 	menu.popup();
 });
 
+ipcMain.on("stream", (event, arg) => {
+	mainWindow.webContents.send("stream", arg);
+});
+
 ipcMain.on("updateLyrics", (event, arg) => {
 	if (lyricsWindow) {
 		lyricsWindow.webContents.send("lyrics", arg);
@@ -659,7 +663,6 @@ ipcMain.on("getFolder", (event, arg) => {
 	//send the savesPath to the requestor
 	event.sender.send("savesFolder", savesPath);
 });
-
 
 ipcMain.on("change", (event, arg) => {
 	changeActivity(arg.name, arg.playlist);

@@ -37,7 +37,8 @@ const {
 } = require("../gallery");
 
 const {
-    ipcRenderer
+    ipcRenderer,
+    shell
 } = require("electron");
 
 const path = require("path");
@@ -244,6 +245,14 @@ document.addEventListener('keydown', (event) => {
     }
 })
 
+ipcRenderer.on("stream", (event, arg) => {
+    nowplaying.innerText = arg.title;
+    nowplaying.onclick = () => {
+        shell.openExternal(arg.youtube);
+    }
+    player.src = arg.url;
+})
+
 /**
  * @param {"change" | "volume" | "seek"} event
  * @param {{songNumber?: {number: number, playlist: string}, volume?: number}} param1
@@ -280,7 +289,7 @@ function updatePlayer(event, {
             
             fs.writeFileSync(path.join(savesPath, "latest.json"), JSON.stringify(current));
 
-            ipcRenderer.send("change", {name: songs.playlists[current.playlist][current.number], playlist: current.playlist});
+            //ipcRenderer.send("change", {name: songs.playlists[current.playlist][current.number], playlist: current.playlist});
             setTimeout(() => {
                 ipcRenderer.send("changeServer", {current});
             }, 500)

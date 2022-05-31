@@ -47,7 +47,7 @@ function changeActivity(songname, playlist) {
             instance: true
         };
 
-        client.setActivity(activity).then(console.log(`the activity changed for ${client.user.username}`)).catch(e => console.error(e))
+        client.setActivity(activity).then(console.log(`the activity changed`)).catch(e => console.error(e))
     }
 }
 

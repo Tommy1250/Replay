@@ -36,7 +36,11 @@
     }
 
     .player div.up-right {
-        grid-column: span 3;
+        grid-column: span 2;
+    }
+
+    .player div.up-left {
+        grid-column: span 1;
     }
 
     .player>div .control {
@@ -107,6 +111,12 @@
     <div class="player">
         <div class="up-right">
             <h2 id="np" class="text-2xl font-bold cursor-pointer"></h2>
+            
+        </div>
+
+        <div class="up-left">
+            <input type="checkbox" id="lysw" onclick="document.getElementById('lyrics').style.visibility = this.checked ? 'visible' : 'hidden';" checked />
+            <label for="lysw">Lyrics</label>
         </div>
 
         <div>
