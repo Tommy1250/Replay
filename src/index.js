@@ -727,7 +727,16 @@ if (settings["server"].enabled === "1") {
 
 	ipcMain.on("changeServer", (event, arg) => {
 		serverSong = arg.current;
+		io.sockets.emit("changeSong", arg.current);
 	});
+
+	ipcMain.on("loopDone", (event, arg) => {
+		io.sockets.emit("loop", arg);
+	})
+
+	ipcMain.on("shuffleclick", (event, arg) => {
+		io.sockets.emit("shuffle", arg);
+	})
 
 	io.on("connection", socket => {
 		console.log(`${socket.id} just connected`)
@@ -748,17 +757,28 @@ if (settings["server"].enabled === "1") {
 				playlist: "random",
 				number: 0
 			});
-			cb(serverSong)
+			cb({song: serverSong, loop: settings["loop"].status, shuffle: settings["shuffle"].status});
+		})
+
+		socket.on("next", () => {
+			mainWindow.webContents.send("next");
+		})
+
+		socket.on("previous", () => {
+			mainWindow.webContents.send("prev");
+		})
+
+		socket.on("doloop", () => {
+			mainWindow.webContents.send("loop");
+		})
+
+		socket.on("doshuffle", () => {
+			mainWindow.webContents.send("shuffle");
 		})
 
 		socket.on("pause", () => {
 			mainWindow.webContents.send("pause");
-			console.log(`${socket.id} paused the song`);
-		})
-
-		socket.on("play", () => {
-			mainWindow.webContents.send("play");
-			console.log(`${socket.id} played the song`);
+			console.log(`${socket.id} toggled pause the song`);
 		})
 
 		socket.on("volume", (volume) => {

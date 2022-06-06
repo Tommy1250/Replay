@@ -5,7 +5,7 @@ like:
 
 1. a control server to control the playback from any device
 2. auto update
-3. support for mp3 and flac files
+3. support for mp3, m4a, ogg, wav and flac files
 4. ease of use
 
 to build the project yourself just download the source code

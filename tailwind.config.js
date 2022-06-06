@@ -1,5 +1,5 @@
 module.exports = {
-  content: ["./src/client/*.{html,js}", "./src/*.{html,js}"],
+  content: ["./src/client/*.{html,js}", "./src/*.{html,js}", "./src/server/*.{html,js}"],
   theme: {
     extend: {},
     spacing: {

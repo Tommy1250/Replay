@@ -117,6 +117,12 @@
         <div class="up-left">
             <input type="checkbox" id="lysw" onclick="document.getElementById('lyrics').style.visibility = this.checked ? 'visible' : 'hidden';" checked />
             <label for="lysw">Lyrics</label>
+            <button id="loop"
+                class="px-1 py-[0.7] text-sm rounded-md text-white font-semibold border border-white hover:text-black hover:bg-blue-600 hover:border-transparent">
+                Loop off
+            </button>
+            <input type="checkbox" id="shuffle"/>
+            <label for="shuffle">Shuffle</label>
         </div>
 
         <div>
@@ -141,7 +147,7 @@
         </div>
     </div>
 
-    <audio id="player" autoplay class="player">This browser doesn't support le pler</audio>
+    <audio id="player" class="player">This browser doesn't support le pler</audio>
 </body>
 
 </html>

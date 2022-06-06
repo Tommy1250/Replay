@@ -16,7 +16,20 @@ async function getGallery(defolder) {
         withFileTypes: true
     })
 
-    let mp3files = files.filter(f => f.isFile() && f.name.endsWith(".mp3")).map(f => f.name);
+    /**
+     * 
+     * @param {string} file 
+     * @returns {boolean}
+     */
+     const filter = (file) => {
+        return file.endsWith(".mp3") ||
+        file.endsWith(".flac") ||
+        file.endsWith(".m4a") ||
+        file.endsWith(".wav") ||
+        file.endsWith(".ogg")
+    }
+
+    let mp3files = files.filter(f => f.isFile() && filter(f.name)).map(f => f.name);
     let folders = files.filter(f => f.isDirectory()).map(f => f.name);
 
     all.folders = folders;
@@ -30,7 +43,7 @@ async function getGallery(defolder) {
     for (let i = 0; i < folders.length; i++) {
         const folder = folders[i];
         const songs = await readdir(`${defolder}/${folder}`)
-        let realSongs = songs.filter(f => f.split(".").pop() === "mp3" || f.split(".").pop() === "flac");
+        let realSongs = songs.filter(f => filter(f));
         let realSongsSorted = realSongs.sort(function (a, b) {
             return a.localeCompare(b, undefined, {
                 numeric: true,

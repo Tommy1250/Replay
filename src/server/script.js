@@ -5,7 +5,6 @@ var socket = io();
 let songs = {};
 
 const pausebtn = document.getElementById("pause");
-const resumebtn = document.getElementById("resume");
 const mutebtn = document.getElementById("mute");
 const prevbtn = document.getElementById("prev");
 const nextbtn = document.getElementById("next");
@@ -23,6 +22,11 @@ const playlist = document.getElementById("playlists");
 const htmlsongs = document.getElementById("songs");
 const remover = document.getElementById("remover");
 
+const loopbtn = document.getElementById("loop");
+const shufflebtn = document.getElementById("shuffle");
+
+const currentplaylist = document.getElementById("cpl");
+
 let current = {
     number: 0,
     playlist: "random"
@@ -32,6 +36,15 @@ let galleryDone = false;
 let playlistshtml = [];
 
 let recieved = false;
+
+/**
+ * 
+ * @param {string} file 
+ * @returns {string}
+ */
+const filter = (file) => {
+    return file.replace(".mp3", "").replace(".flac", "").replace(".m4a", "").replace(".wav", "").replace(".ogg", "")
+}
 
 socket.on("connect", () => {
     socket.emit("get-gallery", lesongs => {
@@ -61,10 +74,6 @@ pausebtn.onclick = () => {
     socket.emit("pause");
 }
 
-resumebtn.onclick = () => {
-    socket.emit("play");
-}
-
 mutebtn.onclick = () => {
     socket.emit("mute");
 };
@@ -72,23 +81,40 @@ mutebtn.onclick = () => {
 nextbtn.onclick = () => {
     if (!socket.connected) return;
 
-    current.number++;
-    if (!songs.playlists[current.playlist][current.number]) return current.number--;
-    updatePlayer("change", {
-        songNumber: current,
-        currentTime: null
-    });
+    socket.emit("next");
 }
 
 prevbtn.onclick = () => {
     if (!socket.connected) return;
 
-    current.number--;
-    if (!songs.playlists[current.playlist][current.number]) return current.number++;
+    socket.emit("previous");
+}
+
+socket.on("changeSong", (song) => {
+    recieved = true;
     updatePlayer("change", {
-        songNumber: current,
-        currentTime: null
+        songNumber: song
     });
+})
+
+socket.on("loop", (status) => {
+    handleLoop(status);
+})
+
+socket.on("shuffle", (state) => {
+    shufflebtn.innerText = state ? "Shuffle on" : "Shuffle off";
+})
+
+loopbtn.onclick = () => {
+    if (!socket.connected) return;
+
+    socket.emit("doloop");
+}
+
+shufflebtn.onclick = () => {
+    if(!socket.connected) return;
+
+    socket.emit("doshuffle");
 }
 
 /**
@@ -105,7 +131,7 @@ function updatePlayer(event, {
     switch (event) {
         case "change":
             current = songNumber
-            nowplaying.innerText = songs.playlists[current.playlist][current.number].replace(".mp3", "").replace(".flac", "");
+            nowplaying.innerText = filter(songs.playlists[current.playlist][current.number]);
             if (!recieved) {
                 socket.emit("song-change", current);
             } else {
@@ -134,7 +160,7 @@ socket.on("change", data => {
  */
 function setupPlayer(lesongs) {
     socket.emit("get-latest", async cb => {
-        current = cb;
+        current = cb.song;
         let volume = 0.5; // default volume
         await fetch("/volume").then(res => res.json()).then(data => volume = data.volume);
 
@@ -143,11 +169,29 @@ function setupPlayer(lesongs) {
         volumeValue.innerText = `${Math.round(volume * 100)}%`;
         recieved = true;
         updatePlayer("change", {
-            songNumber: cb
+            songNumber: cb.song
         });
+
+        handleLoop(cb.loop);
+
+        shufflebtn.innerText = cb.shuffle ? "Shuffle on" : "Shuffle off";
     })
 
     playerDone = true;
+}
+
+function handleLoop(status) {
+    switch (status) {
+        case "one":
+            loopbtn.innerText = "Loop one"
+            break;
+        case "all":
+            loopbtn.innerText = "Loop all"
+            break;
+        case "0":
+            loopbtn.innerText = "Loop off"
+            break;
+    }
 }
 
 let nodes = [];
@@ -162,8 +206,10 @@ function getplaylist(plname) {
     for (let i = 0; i < songs.playlists[plname].length; i++) {
         const element = songs.playlists[plname][i];
 
+
+
         const btn = document.createElement("button");
-        btn.textContent = element.replace(".mp3", "").replace(".flac", "");
+        btn.textContent = filter(element);
         btn.onclick = () => {
             updatePlayer("change", {
                 songNumber: {
@@ -184,6 +230,7 @@ function getplaylist(plname) {
         nodes.push(btn);
         nodes.push(br);
     }
+    currentplaylist.innerText = plname;
     const btn = document.createElement("button");
     btn.style.visibility = "hidden";
     btn.id = "removable";
@@ -196,8 +243,11 @@ function getplaylist(plname) {
 }
 
 remover.onclick = () => {
-    if (!socket.connected) return;
+    removePlaylist();
+}
 
+function removePlaylist() {
+    currentplaylist.innerText = "Your Albums"
     for (let i = 0; i < nodes.length; i++) {
         const element = nodes[i];
         if (element.id === "removable") {
@@ -220,6 +270,7 @@ remover.onclick = () => {
 function makegallery(lesongs) {
     songs = lesongs
 
+    removePlaylist();
     playlist.innerHTML = "";
     playlistshtml = [];
 
