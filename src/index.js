@@ -116,8 +116,7 @@ ipcMain.on("settingsChanged", (event, arg) => {
 app.on('ready', () => {
 	if (settings["update"].status === "1") {
 		require('update-electron-app')({
-			repo: "Tommy1250/Replay",
-			updateInterval: "1 hour"
+			repo: "Tommy1250/Replay"
 		});
 	}
 
