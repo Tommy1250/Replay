@@ -408,8 +408,7 @@ app.on('ready', () => {
 						label: "Previous Song",
 						click: function () {
 							mainWindow.webContents.send("prev");
-						},
-						accelerator: "Left"
+						}
 					},
 					{
 						label: "Pause/Play",
