@@ -241,7 +241,7 @@ app.on('ready', () => {
 				{
 					label: 'Quit',
 					click: function () {
-						app.quit();
+						app.exit();
 					},
 				}
 			]
@@ -285,13 +285,7 @@ app.on('ready', () => {
 					}
 				},
 				{
-					label: "Play",
-					click: function () {
-						mainWindow.webContents.send("play");
-					}
-				},
-				{
-					label: "Pause",
+					label: "Pause/Play",
 					click: function () {
 						mainWindow.webContents.send("pause");
 					}
@@ -329,7 +323,7 @@ app.on('ready', () => {
 							dialog.showMessageBox(dialogOpts).then((returnValue) => {
 								if (returnValue.response === 0) {
 									app.relaunch();
-									app.quit();
+									app.exit();
 								} else {
 									settingsChanged = false;
 									dialog.showMessageBoxSync({
@@ -414,16 +408,11 @@ app.on('ready', () => {
 						label: "Previous Song",
 						click: function () {
 							mainWindow.webContents.send("prev");
-						}
+						},
+						accelerator: "Left"
 					},
 					{
-						label: "Play",
-						click: function () {
-							mainWindow.webContents.send("play");
-						}
-					},
-					{
-						label: "Pause",
+						label: "Pause/Play",
 						click: function () {
 							mainWindow.webContents.send("pause");
 						}
@@ -433,7 +422,7 @@ app.on('ready', () => {
 			{
 				label: 'Quit',
 				click: function () {
-					app.quit();
+					app.exit();
 				}
 			}
 		];
@@ -456,6 +445,13 @@ app.on('ready', () => {
 	Menu.setApplicationMenu(menu2);
 
 	createWindow();
+
+	mainWindow.on('close', (e) => {
+		if (settings["tray"].status === "1") {
+			e.preventDefault();
+			mainWindow.hide();
+		}
+	});
 });
 
 // Quit when all windows are closed, except on macOS. There, it's common
@@ -463,11 +459,7 @@ app.on('ready', () => {
 // explicitly with Cmd + Q.
 app.on('window-all-closed', () => {
 	if (settings["tray"].status === "0") {
-		app.quit()
-	} else {
-		BrowserWindow.getAllWindows().forEach(win => {
-			win.close();
-		});
+		app.quit();
 	}
 });
 
@@ -539,7 +531,7 @@ ipcMain.on("makeSongMenu", (event, arg) => {
 						deleteSong(arg.name, arg.playlist);
 					}
 				})
-				
+
 			}
 		}
 	]
@@ -555,7 +547,7 @@ ipcMain.on("updateLyrics", (event, arg) => {
 	if (lyricsWindow) {
 		lyricsWindow.webContents.send("lyrics", arg);
 	}
-	if (mainWindow)	{
+	if (mainWindow) {
 		mainWindow.webContents.send("lyrics", arg.lyrics);
 	}
 	lyrics = arg;
@@ -591,7 +583,7 @@ function renameSong(songName, playlistName, newName) {
 
 					if (lyricsFolder && lyricsFolder !== "") {
 						if (fs.existsSync(lyricsFolder)) {
-				
+
 							if (fs.existsSync(path.join(lyricsFolder, `${songName.replace(format, "")}.txt`))) {
 								fs.renameSync(path.join(lyricsFolder, `${songName.replace(format, "")}.txt`), path.join(lyricsFolder, `${newName.replace(format, "")}.txt`));
 							}
@@ -612,7 +604,7 @@ function renameSong(songName, playlistName, newName) {
 
 						if (lyricsFolder && lyricsFolder !== "") {
 							if (fs.existsSync(lyricsFolder)) {
-					
+
 								if (fs.existsSync(path.join(lyricsFolder, `${songName.replace(format, "")}.txt`))) {
 									fs.renameSync(path.join(lyricsFolder, `${songName.replace(format, "")}.txt`), path.join(lyricsFolder, `${newName.replace(format, "")}.txt`));
 								}
@@ -637,8 +629,10 @@ function deleteSong(songName, playlistName) {
 		if (folder && folder !== "") {
 			if (fs.existsSync(folder)) {
 				if (fs.existsSync(path.join(folder, songName))) {
-					
-					fs.rmSync(path.join(folder, songName), {recursive: true});
+
+					fs.rmSync(path.join(folder, songName), {
+						recursive: true
+					});
 					mainWindow.webContents.send("refresh");
 				}
 			}
@@ -648,8 +642,10 @@ function deleteSong(songName, playlistName) {
 			if (fs.existsSync(folder)) {
 				if (fs.existsSync(path.join(folder, playlistName))) {
 					if (fs.existsSync(path.join(folder, playlistName, songName))) {
-						
-						fs.rmSync(path.join(folder, playlistName, songName), {recursive: true});
+
+						fs.rmSync(path.join(folder, playlistName, songName), {
+							recursive: true
+						});
 						mainWindow.webContents.send("refresh");
 					}
 				}
@@ -756,7 +752,11 @@ if (settings["server"].enabled === "1") {
 				playlist: "random",
 				number: 0
 			});
-			cb({song: serverSong, loop: settings["loop"].status, shuffle: settings["shuffle"].status});
+			cb({
+				song: serverSong,
+				loop: JSON.parse(fs.readFileSync(path.join(savesPath, "settings.json"), "utf-8"))["loop"].status,
+				shuffle: JSON.parse(fs.readFileSync(path.join(savesPath, "settings.json"), "utf-8"))["shuffle"].status
+			});
 		})
 
 		socket.on("next", () => {

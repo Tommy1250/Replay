@@ -43,6 +43,7 @@ const remover = document.getElementById("remover");
 let played = [];
 
 let galleryDone = false;
+let firstTime = true;
 
 const fs = require("fs");
 
@@ -98,10 +99,6 @@ ipcRenderer.on("pause", () => {
     } else {
         player.pause();
     }
-});
-
-ipcRenderer.on("play", () => {
-    player.play();
 });
 
 ipcRenderer.on("folder", (event, arg) => {
@@ -265,7 +262,12 @@ document.addEventListener('keydown', (event) => {
                 player.muted = true;
             }
             break;
-
+        case "KeyL":
+            loop.click();
+            break;
+        case "KeyS":
+            shuffle.click();
+            break;
     }
 })
 
@@ -302,8 +304,10 @@ function updatePlayer(event, {
             } else {
                 player.src = `${folder}/${current.playlist}/${songs.playlists[current.playlist][current.number]}`
             }
+            
 
-            player.play()
+            if(!firstTime) player.play();
+            else firstTime = false;
 
             if (fs.existsSync(`${lyricsFolder}/${filter(songs.playlists[current.playlist][current.number])}.txt`)) {
                 const dalyrics = fs.readFileSync(`${lyricsFolder}/${filter(songs.playlists[current.playlist][current.number])}.txt`, "utf-8");
@@ -323,11 +327,10 @@ function updatePlayer(event, {
             fs.writeFileSync(path.join(savesPath, "latest.json"), JSON.stringify(current));
 
             //ipcRenderer.send("change", {name: songs.playlists[current.playlist][current.number], playlist: current.playlist});
-            setTimeout(() => {
-                ipcRenderer.send("changeServer", {
-                    current
-                });
-            }, 500)
+            
+            ipcRenderer.send("changeServer", {
+                current
+            });
             break;
         case "volume":
             if (!player.muted)
