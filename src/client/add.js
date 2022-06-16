@@ -59,7 +59,6 @@ ipcRenderer.send("getFolder");
 ipcRenderer.on("savesFolder", (event, data) => {
     savesPath = data;
     musicFolder = fs.readFileSync(path.join(savesPath, "folder.txt"), "utf-8");
-    searchLyrics("rap god", fs.readFileSync(path.join(savesPath, "lyrics.txt"), "utf-8"));
 });
 
 /**
