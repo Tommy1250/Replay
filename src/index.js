@@ -67,7 +67,10 @@ const createWindow = () => {
 	// and load the index.html of the app.
 	//mainWindow.setMenu(null);
 
-	//mainWindow.webContents.openDevTools();
+	if(!app.isPackaged){
+		mainWindow.webContents.openDevTools();
+	}
+	
 	mainWindow.loadFile(path.join(__dirname, 'client/index.html'));
 	mainWindow.setIcon(iconpath);
 };
@@ -224,7 +227,9 @@ app.on('ready', () => {
 								}
 							});
 
-							//addWindow.webContents.openDevTools();
+							if(!app.isPackaged){
+								addWindow.webContents.openDevTools();
+							}
 							addWindow.loadFile(path.join(__dirname, "client/add.html"));
 							addWindow.setMenu(null);
 							addWindow.setIcon(iconpath);
@@ -261,6 +266,9 @@ app.on('ready', () => {
 								}
 							});
 
+							if(!app.isPackaged){
+								lyricsWindow.webContents.openDevTools();
+							}
 							lyricsWindow.loadFile(path.join(__dirname, "client/lyrics.html"));
 							lyricsWindow.setMenu(null);
 							lyricsWindow.setIcon(iconpath);
@@ -305,6 +313,10 @@ app.on('ready', () => {
 						}
 					});
 
+					if(!app.isPackaged){
+						settingsWindow.webContents.openDevTools();
+					}
+
 					settingsWindow.loadFile(path.join(__dirname, "client/settings.html"));
 					settingsWindow.setMenu(null);
 					settingsWindow.setIcon(iconpath);
@@ -347,6 +359,9 @@ app.on('ready', () => {
 						height: 400
 					})
 
+					if(!app.isPackaged){
+						aboutWindow.webContents.openDevTools();
+					}
 					aboutWindow.loadFile(path.join(__dirname, "client/info.html"));
 					aboutWindow.setMenu(null);
 					aboutWindow.setIcon(iconpath);

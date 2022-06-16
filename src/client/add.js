@@ -22,7 +22,7 @@ const videoFinder = async (query) => {
     return (resault.videos.length > 1) ? resault.videos : null
 }
 
-console.log("lmao");
+const lyricsFinder = require("lyrics-finder");
 
 const {
     exec
@@ -59,6 +59,7 @@ ipcRenderer.send("getFolder");
 ipcRenderer.on("savesFolder", (event, data) => {
     savesPath = data;
     musicFolder = fs.readFileSync(path.join(savesPath, "folder.txt"), "utf-8");
+    searchLyrics("rap god", fs.readFileSync(path.join(savesPath, "lyrics.txt"), "utf-8"));
 });
 
 /**
@@ -86,7 +87,7 @@ async function download(url) {
                 }, true, changeName(playlist.title));
             } catch (error) {
                 console.warn(`an error happened\n${error}`);
-                status.innerText = `an error happened\n${error}`;
+                status.innerText = `\nan error happened\n${error}`;
             }
         }
 
@@ -203,7 +204,7 @@ async function downloadAudio({
         if (stderr) {
             console.log("ffmpeg not found");
 
-            status.innerText = `ffmpeg not found tring to download via the server`;
+            status.innerText += `\nffmpeg not found tring to download via the server`;
 
             const file = fs.createWriteStream(path2);
 
@@ -211,14 +212,15 @@ async function downloadAudio({
                 response.pipe(file);
 
                 response.on("open", () => {
-                    status.innerText = `downloading ${title}`;
+                    status.innerText += `\ndownloading ${title}`;
                 });
 
                 // after download completed close filestream
                 file.on("finish", () => {
                     file.close();
-                    status.innerText = `downloaded: ${title}.`;
+                    status.innerText += `\ndownloaded: ${title}.`;
                     console.log("Download Completed");
+                    searchLyrics(title, fs.readFileSync(path.join(savesPath, "lyrics.txt"), "utf-8"));
                 });
             });
     
@@ -232,27 +234,46 @@ async function downloadAudio({
                 fs.createWriteStream(thepath)
                 .on("ready", () => {
                     console.log(`downloading: ${title}...`);
-                    status.innerText = `downloading: ${title}...`;
+                    status.innerText += `\ndownloading: ${title}...`;
                 })
                 .on("finish", () => {
                     console.log(`downloaded: ${title}.`);
-                    status.innerText = `downloaded: ${title}.`;
+                    status.innerText += `\ndownloaded: ${title}.`;
                     exec(`ffmpeg -i "${thepath}" "${path2}"`, (err, sout, serr) => {
                         if (err) console.error(err);
                         console.log("converted the file with the right metadata");
-                        status.innerText = "converted the file with the right metadata";
+                        status.innerText += "\nconverted the file with the right metadata";
                         fs.rm(thepath, (err) => {
                             if (err) return console.error(`there was an error with deleting the file ${thepath}\n${err.message}`);
-                            status.innerText = `${title} was deleted successfully and replaced with the mp3 file\n(basically the file was converted)`;
+                            status.innerText += `\n${title} was deleted successfully and replaced with the mp3 file\n(basically the file was converted)`;
                             console.log(`${title} was deleted successfully and replaced with the mp3 file`);
+                            searchLyrics(title, fs.readFileSync(path.join(savesPath, "lyrics.txt"), "utf-8"));
                         })
                     })
                 })
                 .on("error", (err) => {
                     console.error(`there was an error while downloading ${title}\n${err}`)
-                    status.innerText = `there was an error while downloading ${title}\n${err}`
+                    status.innerText += `\nthere was an error while downloading ${title}\n${err}`
                 })
             );
         }
     });
+}
+
+function searchLyrics(title, lyricsFolder){
+    console.log(`searching for lyrics for ${title}`);
+    status.innerText += `\nsearching for lyrics for ${title}`;
+
+    lyricsFinder("", title)
+    .then(lyrics => {
+        if (lyrics) {
+            console.log(`found lyrics for ${title}`);
+            status.innerText += `\nfound lyrics for ${title}`;
+            fs.writeFileSync(path.join(lyricsFolder, `${changeName(title)}.txt`), lyrics);
+            status.innerText += `\nlyrics for ${title} was saved`;
+        }
+    }).catch(err => {
+        console.error(err);
+        status.innerText += `\n${err}`;
+    })
 }

@@ -2,6 +2,7 @@ const form = document.getElementById("main");
 const tray = document.getElementById("tray");
 const discord = document.getElementById("discord");
 const update = document.getElementById("autoupdate");
+const search = document.getElementById("search");
 
 const server = document.getElementById("server");
 const port = document.getElementById("port");
@@ -11,6 +12,7 @@ const traystatus = document.getElementById("traystatus");
 const updatestatus = document.getElementById("updatestatus");
 const serverstatus = document.getElementById("serverstatus");
 const serveradress = document.getElementById("serveradress");
+const searchStatus = document.getElementById("searchstatus");
 
 const ip = require("ip");
 const fs = require("fs");
@@ -36,6 +38,9 @@ ipcRenderer.on("savesFolder", (event, data) => {
 
     update.checked = settings["update"].status === "1" ? true:false
     updatestatus.innerText = settings["update"].status === "1" ? "enabled" : "disabled";
+
+    search.checked = settings["search"].status;
+    searchStatus.innerText = settings["search"].status ? "enabled" : "disabled";
 
     server.checked = settings["server"].enabled === "1" ? true:false
     serverstatus.innerText = settings["server"].enabled === "1" ? "enabled" : "disabled";
@@ -82,12 +87,13 @@ form.onsubmit = (ev) => {
     settings["update"].status = update.checked ? "1" : "0";
     settings["server"].enabled = server.checked ? "1" : "0";
     settings["server"].port = port.value.toString();
+    settings["search"].status = search.checked;
     saveSettings(settings);
 }
 
 function saveSettings(settings){
 	fs.writeFile(path.join(savesPath, 'settings.json') , JSON.stringify(settings), (err) => {
-		if (err) console.error(err)
+		if (err) console.error(err);
         ipcRenderer.send("settingsChanged");
         window.close();
 	})
