@@ -13,7 +13,7 @@
 </head>
 <style>
     body {
-        background-color: rgb(28, 25, 25);
+        background-color: rgb(18, 17, 17);
         color: white;
     }
 
@@ -21,7 +21,7 @@
         display: grid;
         padding: .8rem;
         margin-bottom: 12vh;
-        grid-template-columns: 2fr 1fr;
+        grid-template-columns: 2fr 0fr 3fr 0fr 1.5fr;
     }
 
     .player {
@@ -31,7 +31,7 @@
         position: fixed;
         width: 100%;
         height: auto;
-        background-color: rgb(25, 25, 25);
+        background-color: rgb(18, 17, 17);
         grid-template-columns: 1fr 3fr 1fr;
     }
 
@@ -91,30 +91,46 @@
         width: 70%;
         cursor: pointer;
     }
+
+    .vl {
+        border-left: 2px solid black;
+        height: 100%;
+    }
+
+    .clicked {
+        color: white;
+    }
 </style>
 
 <body>
     <div class="main">
         <!-- <h1 id="userId" class="text-3xl font-bold"></h1> -->
         <div class="left">
-            <h1 id="currentplaylist" class="text-2xl font-semibold">Your Albums</h1>
-            <br>
             <div id="playlists"></div>
-            <div id="songs" style="visibility: hidden;">
-                <button id="remover"
-                    class="px-4 py-1 text-sm text-red-600 font-semibold rounded-full border border-red-200 hover:text-white hover:bg-red-600 hover:border-transparent focus:outline-none focus:ring-2 focus:ring-red-600 focus:ring-offset-2">goback</button>
-                <br>
-            </div>
         </div>
-        <p id="lyrics" class="text-center"></p>
+        <div class="vl"></div>
+        <div class="middle p-[5px]">
+            <form id="searchForm" class="flex flex-row">
+                <input type="text" id="search" class="text-black flex-grow" placeholder="search for songs...">
+                <button type="submit" id="clearSearch" class="px-1 bg-white border-white text-gray-700 hover:text-gray-400">clear</button>
+            </form>
+            <h1 id="currentplaylist" class="text-2xl font-semibold">Album songs</h1>
+            <br>
+            <div id="songs"></div>
+        </div>
+        <div class="vl"></div>
+        <div class="right">
+            <p id="lyrics" class="text-center"></p>
+        </div>
     </div>
     <div class="player">
         <div class="up-right">
+            <hr class="border-gray-700">
             <h2 id="np" class="text-2xl font-bold cursor-pointer"></h2>
-            
         </div>
 
         <div class="up-left">
+            <hr class="border-gray-700">
             <input type="checkbox" id="lysw" onclick="document.getElementById('lyrics').style.visibility = this.checked ? 'visible' : 'hidden';" checked />
             <label for="lysw">Lyrics</label>
             <button id="loop"

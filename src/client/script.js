@@ -10,7 +10,7 @@ const player = document.getElementById("player");
 const nextbtn = document.getElementById("next");
 const prevbtn = document.getElementById("prev");
 const nowplaying = document.getElementById("np");
-const currnetPlaylist = document.getElementById("currentplaylist");
+const currentPlaylist = document.getElementById("currentplaylist");
 
 const pause = document.getElementById("pause");
 const timeline = document.getElementById("timeline");
@@ -29,14 +29,17 @@ const volumeValue = document.getElementById("davolume");
 
 const playlist = document.getElementById("playlists");
 const htmlsongs = document.getElementById("songs");
-const remover = document.getElementById("remover");
+
+const search = document.getElementById("search");
+const clearSearch = document.getElementById("clearSearch");
+const searchForm = document.getElementById("searchForm");
 
 /**
  * 
  * @param {string} file 
  * @returns {string}
  */
- const filter = (file) => {
+const filter = (file) => {
     return file.replace(".mp3", "").replace(".flac", "").replace(".m4a", "").replace(".wav", "").replace(".ogg", "")
 }
 
@@ -62,6 +65,8 @@ let current = {
     number: 0,
     playlist: "random"
 };
+
+let latestPlaylist = "";
 
 let playlistshtml = [];
 let nodes = [];
@@ -217,57 +222,73 @@ shuffle.onclick = () => {
     fs.writeFileSync(path.join(savesPath, "settings.json"), JSON.stringify(settings));
 }
 
-document.addEventListener('keydown', (event) => {
+clearSearch.onclick = () => {
+    search.value = "";
+}
+
+searchForm.onsubmit = (event) => {
     event.preventDefault();
-    switch (event.code) {
-        case "Space":
-            if (player.paused) {
-                player.play();
-            } else {
-                player.pause();
-            }
-            break;
-        case "ArrowRight":
-            nextSong();
-            break;
-        case "ArrowLeft":
-            previousSong();
-            break;
-        case "ArrowUp":
-            if (player.volume < 0.95) {
-                player.volume += 0.05;
-                slider.value = player.volume * 100;
-                volumeValue.innerText = `${Math.round(player.volume * 100)}%`;
-            } else {
-                player.volume = 1;
-                slider.value = player.volume * 100;
-                volumeValue.innerText = `${Math.round(player.volume * 100)}%`;
-            }
-            break;
-        case "ArrowDown":
-            if (player.volume > 0.05) {
-                player.volume -= 0.05;
-                slider.value = player.volume * 100;
-                volumeValue.innerText = `${Math.round(player.volume * 100)}%`;
-            } else {
-                player.volume = 0.01;
-                slider.value = player.volume * 100;
-                volumeValue.innerText = `${Math.round(player.volume * 100)}%`;
-            }
-            break;
-        case "KeyM":
-            if (player.muted) {
-                player.muted = false;
-            } else {
-                player.muted = true;
-            }
-            break;
-        case "KeyL":
-            loop.click();
-            break;
-        case "KeyS":
-            shuffle.click();
-            break;
+    console.log("search submit");
+    searchPlaylist(search.value);
+}
+
+search.oninput = () => {
+    searchPlaylist(search.value);
+}
+
+document.addEventListener('keydown', (event) => {
+    if (search !== document.activeElement) {
+        event.preventDefault();
+        switch (event.code) {
+            case "Space":
+                if (player.paused) {
+                    player.play();
+                } else {
+                    player.pause();
+                }
+                break;
+            case "ArrowRight":
+                nextSong();
+                break;
+            case "ArrowLeft":
+                previousSong();
+                break;
+            case "ArrowUp":
+                if (player.volume < 0.95) {
+                    player.volume += 0.05;
+                    slider.value = player.volume * 100;
+                    volumeValue.innerText = `${Math.round(player.volume * 100)}%`;
+                } else {
+                    player.volume = 1;
+                    slider.value = player.volume * 100;
+                    volumeValue.innerText = `${Math.round(player.volume * 100)}%`;
+                }
+                break;
+            case "ArrowDown":
+                if (player.volume > 0.05) {
+                    player.volume -= 0.05;
+                    slider.value = player.volume * 100;
+                    volumeValue.innerText = `${Math.round(player.volume * 100)}%`;
+                } else {
+                    player.volume = 0.01;
+                    slider.value = player.volume * 100;
+                    volumeValue.innerText = `${Math.round(player.volume * 100)}%`;
+                }
+                break;
+            case "KeyM":
+                if (player.muted) {
+                    player.muted = false;
+                } else {
+                    player.muted = true;
+                }
+                break;
+            case "KeyL":
+                loop.click();
+                break;
+            case "KeyS":
+                shuffle.click();
+                break;
+        }
     }
 })
 
@@ -290,11 +311,10 @@ function updatePlayer(event, {
 }) {
     switch (event) {
         case "change":
-            if(current.playlist !== songNumber.playlist) played = [];
+            if (current.playlist !== songNumber.playlist) played = [];
             current = songNumber
             nowplaying.innerText = filter(songs.playlists[current.playlist][current.number]);
             nowplaying.onclick = () => {
-                removePlaylist();
                 getplaylist(current.playlist);
                 nodes[current.number * 2].focus();
             }
@@ -304,9 +324,9 @@ function updatePlayer(event, {
             } else {
                 player.src = `${folder}/${current.playlist}/${songs.playlists[current.playlist][current.number]}`
             }
-            
 
-            if(!firstTime) player.play();
+
+            if (!firstTime) player.play();
             else firstTime = false;
 
             if (fs.existsSync(`${lyricsFolder}/${filter(songs.playlists[current.playlist][current.number])}.txt`)) {
@@ -327,7 +347,7 @@ function updatePlayer(event, {
             fs.writeFileSync(path.join(savesPath, "latest.json"), JSON.stringify(current));
 
             //ipcRenderer.send("change", {name: songs.playlists[current.playlist][current.number], playlist: current.playlist});
-            
+
             ipcRenderer.send("changeServer", {
                 current
             });
@@ -372,9 +392,9 @@ player.onplay = () => {
 }
 
 player.onended = () => {
-    if(!played.includes(current.number)) played.push(current.number);
+    if (!played.includes(current.number)) played.push(current.number);
 
-    if(!shuffle.checked){
+    if (!shuffle.checked) {
 
         current.number++;
 
@@ -390,14 +410,14 @@ player.onended = () => {
                 return
             }
         }
-    }else{
+    } else {
         const makeNumber = () => {
             return Math.floor(Math.random() * songs.playlists[current.playlist].length - 1);
         }
 
         let number;
 
-        if(played.length === songs.playlists[current.playlist].length){
+        if (played.length === songs.playlists[current.playlist].length) {
             if (doLoop === 2) {
                 current.number = 0;
                 played = [];
@@ -405,7 +425,7 @@ player.onended = () => {
                 played = [];
                 return
             }
-        }else{
+        } else {
             do {
                 number = makeNumber()
             } while (played.includes(number) && number < 0);
@@ -419,10 +439,69 @@ player.onended = () => {
     });
 }
 
-function nextSong(){
-    if(!played.includes(current.number)) played.push(current.number);
+/**
+ * 
+ * @param {string} searchValue 
+ */
+function searchPlaylist(searchValue){
+    console.log(`Starting search for ${searchValue}`);
 
-    if(!shuffle.checked){
+    if(searchValue === ""){
+        getplaylist(latestPlaylist);
+    }else{
+        currentPlaylist.innerText = "Search results"
+        removePlaylist();
+
+        for (let i = 0; i < songs.folders.length; i++) {
+            const folder = songs.folders[i];
+            
+            for (let j = 0; j < songs.playlists[folder].length; j++) {
+                /**
+                 * @type {string}
+                 */
+                const song = songs.playlists[folder][j];
+        
+                if(song.toLowerCase().includes(searchValue.toLowerCase())){
+                    const btn = document.createElement("button");
+                    btn.textContent = filter(song);
+                    btn.onclick = () => {
+                        updatePlayer("change", {
+                            songNumber: {
+                                number: j,
+                                playlist: folder
+                            }
+                        });
+                    }
+                    btn.oncontextmenu = (e) => {
+                        console.log("right click on " + btn.textContent);
+                        ipcRenderer.send("makeSongMenu", {
+                            name: song,
+                            playlist: folder,
+                            number: j
+                        });
+                    }
+                    btn.id = "removable";
+                    btn.className = "px-2 text-left py-1 w-full text-sm text-gray-300 font-medium rounded-md hover:text-white hover:bg-white hover:bg-opacity-20 hover:border-transparent focus:border"
+                    htmlsongs.appendChild(btn);
+            
+                    //make a br element
+                    const br = document.createElement("br");
+                    br.id = "removable";
+                    htmlsongs.appendChild(br);
+            
+                    nodes.push(btn);
+                    nodes.push(br);
+                }
+            }
+        }
+    }
+}
+
+
+function nextSong() {
+    if (!played.includes(current.number)) played.push(current.number);
+
+    if (!shuffle.checked) {
         current.number++;
 
         if (!songs.playlists[current.playlist][current.number]) {
@@ -435,7 +514,7 @@ function nextSong(){
                 return
             }
         }
-    }else{
+    } else {
         const makeNumber = () => {
             return parseInt(Math.random() * songs.playlists[current.playlist].length);
         }
@@ -443,7 +522,7 @@ function nextSong(){
         let number;
 
         console.log(played.length, songs.playlists[current.playlist].length);
-        if(played.length === songs.playlists[current.playlist].length){
+        if (played.length === songs.playlists[current.playlist].length) {
             if (doLoop === 2) {
                 current.number = 0;
                 played = [];
@@ -451,7 +530,7 @@ function nextSong(){
                 played = [];
                 return
             }
-        }else{
+        } else {
             do {
                 number = makeNumber()
             } while (played.includes(number));
@@ -465,10 +544,10 @@ function nextSong(){
     });
 }
 
-function previousSong(){
+function previousSong() {
     const shuffleSong = played.pop()
 
-    if(!shuffle.checked){
+    if (!shuffle.checked) {
         current.number--;
 
         if (!songs.playlists[current.playlist][current.number]) {
@@ -479,16 +558,16 @@ function previousSong(){
                 return
             }
         }
-    }else{
-        if(shuffleSong !== undefined) {
+    } else {
+        if (shuffleSong !== undefined) {
             current.number = shuffleSong
-        }else {
+        } else {
             return
         }
     }
 
     console.log(played)
-    
+
     updatePlayer("change", {
         songNumber: current
     });
@@ -546,8 +625,10 @@ function setupPlayer() {
  * @param {string} plname 
  */
 function getplaylist(plname) {
-    playlist.style.visibility = "hidden";
-    htmlsongs.style.visibility = "visible";
+    //playlist.style.visibility = "hidden";
+    //htmlsongs.style.visibility = "visible";
+
+    removePlaylist();
 
     for (let i = 0; i < songs.playlists[plname].length; i++) {
         const element = songs.playlists[plname][i];
@@ -571,7 +652,7 @@ function getplaylist(plname) {
             });
         }
         btn.id = "removable";
-        btn.className = "px-4 py-1 text-sm text-purple-600 font-semibold rounded-full border border-purple-200 hover:text-white hover:bg-purple-600 hover:border-transparent focus:outline-none focus:ring-2 focus:ring-purple-600 focus:ring-offset-2"
+        btn.className = "px-2 text-left py-1 w-full text-sm text-gray-300 font-medium rounded-md hover:text-white hover:bg-white hover:bg-opacity-20 hover:border-transparent focus:border"
         htmlsongs.appendChild(btn);
 
         //make a br element
@@ -582,44 +663,44 @@ function getplaylist(plname) {
         nodes.push(btn);
         nodes.push(br);
     }
-    const btn = document.createElement("button");
+    /*const btn = document.createElement("button");
     btn.style.visibility = "hidden";
     btn.id = "removable";
     htmlsongs.appendChild(btn);
-    nodes.push(btn);
-    currnetPlaylist.innerText = plname;
+    nodes.push(btn);*/
+    latestPlaylist = plname;
+    currentPlaylist.innerText = plname;
     for (let i = 0; i < playlistshtml.length; i++) {
+        /**
+         * @type {HTMLElement}
+         */
         const element = playlistshtml[i];
-        playlist.removeChild(element);
+        if(element.innerText === plname){
+            if(!element.classList.contains("clicked"))
+            element.classList.add("clicked");
+        }else{
+            if(element.classList.contains("clicked"))
+            element.classList.remove("clicked");
+        }
     }
 }
 
-remover.onclick = () => {
-    removePlaylist();
-}
-
 function removePlaylist() {
-    currnetPlaylist.innerText = "Your Albums"
     for (let i = 0; i < nodes.length; i++) {
         const element = nodes[i];
         if (element.id === "removable") {
             htmlsongs.removeChild(element);
         }
     }
-    for (let i = 0; i < playlistshtml.length; i++) {
-        const element = playlistshtml[i];
-        playlist.appendChild(element);
-    }
     nodes = []
-    playlist.style.visibility = "visible";
-    htmlsongs.style.visibility = "hidden";
+    //playlist.style.visibility = "visible";
+    //htmlsongs.style.visibility = "hidden";
 }
 
 function makegallery() {
     getGallery(folder).then(desongs => {
         songs = desongs;
 
-        removePlaylist();
         playlist.innerHTML = '';
         playlistshtml = [];
 
@@ -632,7 +713,7 @@ function makegallery() {
             const btn = document.createElement("button");
             btn.textContent = element;
             btn.onclick = () => getplaylist(element);
-            btn.className = "px-4 py-1 text-sm text-purple-600 font-semibold rounded-full border border-purple-200 hover:text-white hover:bg-purple-600 hover:border-transparent focus:outline-none focus:ring-2 focus:ring-purple-600 focus:ring-offset-2"
+            btn.className = "py-[2px] text-left font-medium text-sm text-gray-500 hover:text-white focus:text-white"
 
             playlist.appendChild(btn);
 
@@ -641,6 +722,12 @@ function makegallery() {
 
             playlistshtml.push(btn);
             playlistshtml.push(br);
+        }
+
+        if (currentPlaylist.innerText === "Album songs") {
+            getplaylist(JSON.parse(fs.readFileSync(path.join(savesPath, "latest.json"), "utf-8")).playlist);
+        } else {
+            getplaylist(currentPlaylist.innerText);
         }
 
         if (!galleryDone) {

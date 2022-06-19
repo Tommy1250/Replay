@@ -398,6 +398,12 @@ app.on('ready', () => {
 		}
 	}
 
+	if(!app.isPackaged){
+		menuTemplate[0].submenu.push({
+			role: "reload"
+		})
+	}
+
 	if (settings["tray"].status === "1") {
 		tray = new Tray(iconpath);
 
