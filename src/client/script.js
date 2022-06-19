@@ -298,6 +298,7 @@ ipcRenderer.on("stream", (event, arg) => {
         shell.openExternal(arg.youtube);
     }
     player.src = arg.url;
+    player.play();
 })
 
 /**
