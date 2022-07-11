@@ -6,23 +6,17 @@
     <title>Rename Song</title>
     <style>
         body {
-            background-color: rgb(28, 25, 25);
-            color: white;
+            background-color: rgb(18, 17, 17);
             padding: .4rem;
         }
-        .songname {
-            width: 100%;
-            box-sizing: content-box;
-            overflow-wrap: break-word;
-            white-space: nowrap;
-        }
     </style>
+    <link rel="stylesheet" href="style.css">
     <script src="rename.js" defer></script>
 </head>
 <body>
-    <form id="form">
-        <input type="text" class="songname" id="name" placeholder="input the new name here">
-        <button type="submit">Confirm</button>
+    <form id="form" class="flex flex-row">
+        <input type="text" class="text-black flex-grow-1 w-full" id="name" placeholder="input the new name here">
+        <button type="submit" class="px-1 bg-white border-white text-gray-700 hover:text-gray-400">Confirm</button>
     </form>
 </body>
 </html>

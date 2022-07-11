@@ -13,13 +13,52 @@
 </head>
 <style>
     body {
-        background-color: rgb(28, 25, 25);
+        background-color: rgb(18, 17, 17);
         color: white;
+    }
+
+    .timeline {
+        -webkit-appearance: none;
+        width: 75%;
+        height: .5em;
+        background-color: #e5e5e5;
+        border-radius: 5px;
+        background-size: 0% 100%;
+        background-image: linear-gradient(#175aa2, #175aa2);
+        background-repeat: no-repeat;
+    }
+
+    .timeline::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        width: 1em;
+        height: 1em;
+        border-radius: 50%;
+        cursor: pointer;
+        transition: all .1s;
+        background-color: #175aa2;
+    }
+
+    .timeline::-webkit-slider-thumb:hover {
+        background-color: #023d7c;
+    }
+
+    /*.timeline:hover::-webkit-slider-thumb {
+        opacity: 1;
+    }*/
+
+    .timeline::-webkit-slider-runnable-track {
+        -webkit-appearance: none;
+        box-shadow: none;
+        border: none;
+        background: transparent;
     }
 </style>
 
 <body>
-    <div class="container px-1 py-1">
+    <div class="container px-2 py-2">
+        <input type="range" step="0.01" value="0" max="100" id="timeline" class="timeline">
+            <label id="time" for="timeline">0:10/2:22</label>
+        </div>
         <h2 id="np" class="text-2xl font-bold"></h2>
         <div class="slidecontainer">
             <label for="volume">volume:</label>
@@ -48,6 +87,11 @@
             class="px-4 py-1 text-sm text-white font-semibold rounded-full border border-white hover:text-black hover:bg-purple-600 hover:border-transparent focus:outline-none focus:ring-2 focus:ring-purple-600 focus:ring-offset-2">Shuffle</button>
         <br>
         <br>
+        <form id="searchForm" class="flex flex-row">
+            <input type="text" id="search" class="text-black flex-grow-0 rounded-l-full w-2/3 px-1" placeholder="Search for songs..." autocomplete="off">
+            <button type="submit" id="clearSearch"
+                class="px-1 bg-white border-white text-gray-700 hover:text-gray-400 rounded-r-full">clear</button>
+        </form>
         <h2 class="text-xl font-bold" id="cpl">Your Albums</h2>
         <div id="playlists"></div>
         <div id="songs" style="visibility: hidden;">

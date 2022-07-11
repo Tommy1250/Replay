@@ -6,9 +6,7 @@ const form = document.getElementById("form");
 const fs = require("fs");
 const path = require("path");
 
-const genius_key = process.env.GENUIS_KEY;
-const GENIUS = require("genius-lyrics");
-const genius = new GENIUS.Client(genius_key);
+const lyricsFinder = require("lyrics-finder");
 
 let current = {
     name: "",
@@ -59,7 +57,21 @@ async function searchLyrics() {
     const search = searchbar.value;
     if (!search) return;
     searchbar.value = "";
-    try{
+
+    lyricsFinder("", search)
+    .then((lyrics) => {
+        if(lyrics){
+            lyricsHTML.innerText = lyrics;
+        }else{
+            lyricsHTML.innerText = "Song not found!";
+        }
+    })
+    .catch((err) => {
+        console.log(err);
+        lyricsHTML.innerText = "Song not found!";
+    })
+    
+    /*try{
         const song = await genius.songs.search(search);
         const lyrics = await song[0].lyrics(false)
 
@@ -67,5 +79,5 @@ async function searchLyrics() {
     }catch (e) {
         console.log(e);
         lyricsHTML.innerText = "Song not found!";
-    }
+    }*/
 }

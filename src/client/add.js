@@ -270,6 +270,9 @@ function searchLyrics(title, lyricsFolder){
             status.innerText += `\nfound lyrics for ${title}`;
             fs.writeFileSync(path.join(lyricsFolder, `${changeName(title)}.txt`), lyrics);
             status.innerText += `\nlyrics for ${title} was saved`;
+        } else {
+            console.log(`couldn't find lyrics for ${title}`);
+            status.innerText += `\ncouldn't find lyrics for ${title}`;
         }
     }).catch(err => {
         console.error(err);

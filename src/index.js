@@ -60,17 +60,17 @@ const createWindow = () => {
 			nodeIntegrationInWorker: true,
 			nodeIntegrationInSubFrames: true,
 			enableRemoteModule: true,
-			contextIsolation: false //required flag
+			contextIsolation: false
 		}
 	});
 
 	// and load the index.html of the app.
 	//mainWindow.setMenu(null);
 
-	if(!app.isPackaged){
+	if (!app.isPackaged) {
 		mainWindow.webContents.openDevTools();
 	}
-	
+
 	mainWindow.loadFile(path.join(__dirname, 'client/index.html'));
 	mainWindow.setIcon(iconpath);
 };
@@ -227,7 +227,7 @@ app.on('ready', () => {
 								}
 							});
 
-							if(!app.isPackaged){
+							if (!app.isPackaged) {
 								addWindow.webContents.openDevTools();
 							}
 							addWindow.loadFile(path.join(__dirname, "client/add.html"));
@@ -266,7 +266,7 @@ app.on('ready', () => {
 								}
 							});
 
-							if(!app.isPackaged){
+							if (!app.isPackaged) {
 								lyricsWindow.webContents.openDevTools();
 							}
 							lyricsWindow.loadFile(path.join(__dirname, "client/lyrics.html"));
@@ -313,7 +313,7 @@ app.on('ready', () => {
 						}
 					});
 
-					if(!app.isPackaged){
+					if (!app.isPackaged) {
 						settingsWindow.webContents.openDevTools();
 					}
 
@@ -359,7 +359,7 @@ app.on('ready', () => {
 						height: 400
 					})
 
-					if(!app.isPackaged){
+					if (!app.isPackaged) {
 						aboutWindow.webContents.openDevTools();
 					}
 					aboutWindow.loadFile(path.join(__dirname, "client/info.html"));
@@ -382,7 +382,7 @@ app.on('ready', () => {
 				click: () => {
 					shell.openPath(lyricsFolderLocation);
 				}
-			}, )
+			})
 		}
 	}
 
@@ -398,7 +398,7 @@ app.on('ready', () => {
 		}
 	}
 
-	if(!app.isPackaged){
+	if (!app.isPackaged) {
 		menuTemplate[0].submenu.push({
 			role: "reload"
 		})
@@ -506,8 +506,8 @@ ipcMain.on("makeSongMenu", (event, arg) => {
 			click: () => {
 				if (!renameWindow) {
 					renameWindow = new BrowserWindow({
-						width: 400,
-						height: 100,
+						width: 600,
+						height: 77,
 						webPreferences: {
 							nodeIntegration: true,
 							contextIsolation: false
@@ -517,15 +517,22 @@ ipcMain.on("makeSongMenu", (event, arg) => {
 					renameWindow.loadFile(path.join(__dirname, "client/rename.html"));
 					renameWindow.setMenu(null);
 					renameWindow.setIcon(iconpath);
-					renameWindow.webContents.send("song", {
+
+					if (!app.isPackaged) {
+						renameWindow.webContents.openDevTools();
+					}
+
+					renameWindow.webContents.send("info", {
 						songName: arg.name,
 						playlistName: arg.playlist,
+						playlist: false
 					});
 
-					ipcMain.on("getSong", () => {
-						renameWindow.webContents.send("song", {
+					ipcMain.on("getInfo", () => {
+						renameWindow.webContents.send("info", {
 							songName: arg.name,
 							playlistName: arg.playlist,
+							playlist: false
 						});
 					})
 
@@ -555,9 +562,111 @@ ipcMain.on("makeSongMenu", (event, arg) => {
 			}
 		}
 	]
+
+	if (arg.addShow) {
+		template.splice(2, 0, {
+			label: "Show in Playlist",
+			click: () => {
+				mainWindow.webContents.send("showSong", {
+					playlist: arg.playlist,
+					number: arg.number
+				})
+			}
+		})
+	}
 	const menu = Menu.buildFromTemplate(template);
 	menu.popup();
 });
+
+ipcMain.on("makePlaylistMenu", (event, arg) => {
+	const template = [{
+			label: "Play",
+			click: () => {
+				mainWindow.webContents.send("change", {
+					number: 0,
+					playlist: arg.name
+				});
+			}
+		},
+		{
+			label: "Browse to folder",
+			click: () => {
+				let folder = fs.readFileSync(path.join(savesPath, "folder.txt"), "utf-8");
+				if(arg.name === "random"){
+					shell.openPath(folder);
+				}else{
+					shell.openPath(path.join(folder, arg.name))
+				}
+			}
+		}
+	]
+
+	if(arg.name !== "random"){
+		template.push({
+			label: "Rename",
+			click: () => {
+				if (!renameWindow) {
+					renameWindow = new BrowserWindow({
+						width: 600,
+						height: 77,
+						webPreferences: {
+							nodeIntegration: true,
+							contextIsolation: false
+						}
+					});
+
+					renameWindow.loadFile(path.join(__dirname, "client/rename.html"));
+					renameWindow.setMenu(null);
+					renameWindow.setIcon(iconpath);
+
+					if (!app.isPackaged) {
+						renameWindow.webContents.openDevTools();
+					}
+
+					renameWindow.webContents.send("info", {
+						songName: "",
+						playlistName: arg.name,
+						playlist: true
+					});
+
+					ipcMain.on("getInfo", () => {
+						renameWindow.webContents.send("info", {
+							songName: "",
+							playlistName: arg.name,
+							playlist: true
+						});
+					})
+
+					renameWindow.on("closed", () => {
+						renameWindow.destroy();
+						renameWindow = null;
+					})
+				}
+			}
+		},
+		{
+			label: "Delete",
+			click: () => {
+				const dialogOpts = {
+					type: 'info',
+					buttons: ['Yes', 'No'],
+					title: 'Delete Playlist',
+					detail: `Are you sure you want to delete the playlist: ${arg.name}?\nNOTE: This will delete the playlist and all of its content from the device`,
+					icon: path.join(__dirname, "favicon.ico")
+				}
+				dialog.showMessageBox(dialogOpts).then((returnValue) => {
+					if (returnValue.response === 0) {
+						deletePlaylist(arg.name);
+					}
+				})
+
+			}
+		})
+	}
+
+	const menu = Menu.buildFromTemplate(template);
+	menu.popup();
+})
 
 ipcMain.on("stream", (event, arg) => {
 	mainWindow.webContents.send("stream", arg);
@@ -581,6 +690,11 @@ ipcMain.on("renameSong", (event, arg) => {
 	renameWindow.close();
 	renameSong(arg.songName, arg.playlistName, arg.newName);
 });
+
+ipcMain.on("renamePlaylist", (event, arg) => {
+	renameWindow.close();
+	renamePlaylist(arg.playlistName, arg.newName);
+})
 
 /**
  * 
@@ -674,6 +788,44 @@ function deleteSong(songName, playlistName) {
 	}
 }
 
+/**
+ * 
+ * @param {string} playlistName 
+ * @param {string} newName 
+ */
+function renamePlaylist(playlistName, newName){
+	let folder = fs.readFileSync(path.join(savesPath, "folder.txt"), "utf-8");
+
+	let oldPath = path.join(folder, playlistName);
+	let newPath = path.join(folder, newName);
+
+	if(folder){
+		if(fs.existsSync(oldPath)){
+			console.log(`Renaming: ${oldPath}\nto: ${newPath}`)
+			fs.renameSync(oldPath, newPath);
+			mainWindow.webContents.send("refresh");
+		}
+	}
+}
+
+/**
+ * 
+ * @param {string} playlistName 
+ */
+function deletePlaylist(playlistName){
+	let folder = fs.readFileSync(path.join(savesPath, "folder.txt"), "utf-8");
+
+	let Path = path.join(folder, playlistName);
+
+	if(folder){
+		if(fs.existsSync(Path)){
+			fs.rmSync(Path, {recursive: true})
+			console.log(`Deleted: ${playlistName}`);
+			mainWindow.webContents.send("refresh");
+		}
+	}
+}
+
 ipcMain.on("getFolder", (event, arg) => {
 	//send the savesPath to the requestor
 	event.sender.send("savesFolder", savesPath);
@@ -695,42 +847,42 @@ ipcMain.on("pause", (event, arg) => {
 // code. You can also put them in separate files and import them here.
 if (settings["server"].enabled === "1") {
 	const express = require("express");
-	const app = express();
+	const appExpress = express();
 
 	const {
 		getGallery
 	} = require("./gallery");
 
-	app.use(express.json());
-	app.use(express.urlencoded({
+	appExpress.use(express.json());
+	appExpress.use(express.urlencoded({
 		extended: false
 	}))
 
 	const http = require('http');
-	const server = http.createServer(app);
+	const server = http.createServer(appExpress);
 	const {
 		Server
 	} = require("socket.io");
 
 	const io = new Server(server);
 
-	app.get("/", (req, res) => {
+	appExpress.get("/", (req, res) => {
 		res.sendFile(path.join(__dirname, "server/index.html"));
 	})
 
-	app.get("/script.js", (req, res) => {
+	appExpress.get("/script.js", (req, res) => {
 		res.sendFile(path.join(__dirname, "server/script.js"))
 	})
 
-	app.get("/style.css", (req, res) => {
+	appExpress.get("/style.css", (req, res) => {
 		res.sendFile(path.join(__dirname, "client/style.css"))
 	})
 
-	app.get("/favicon", (req, res) => {
+	appExpress.get("/favicon.ico", (req, res) => {
 		res.sendFile(path.join(__dirname, "favicon.ico"))
 	})
 
-	app.get("/volume", async (req, res) => {
+	appExpress.get("/volume", async (req, res) => {
 		const volumefile = fs.readFileSync(path.join(savesPath, "volume.txt"), "utf-8");
 		const volume = parseFloat(volumefile);
 		return res.status(200).send({
@@ -751,6 +903,14 @@ if (settings["server"].enabled === "1") {
 
 	ipcMain.on("shuffleclick", (event, arg) => {
 		io.sockets.emit("shuffle", arg);
+	})
+
+	ipcMain.on("timeLineSend", (event, arg) => {
+		io.sockets.emit("timeLineChange", arg);
+	})
+
+	ipcMain.on("volumeChange", (event, arg) => {
+		io.sockets.emit("volumeChange", arg)
 	})
 
 	io.on("connection", socket => {
@@ -777,6 +937,10 @@ if (settings["server"].enabled === "1") {
 				loop: JSON.parse(fs.readFileSync(path.join(savesPath, "settings.json"), "utf-8"))["loop"].status,
 				shuffle: JSON.parse(fs.readFileSync(path.join(savesPath, "settings.json"), "utf-8"))["shuffle"].status
 			});
+		})
+
+		socket.on("timeChange", (time) => {
+			mainWindow.webContents.send("timeLineReceive", time)
 		})
 
 		socket.on("next", () => {
@@ -820,4 +984,23 @@ if (settings["server"].enabled === "1") {
 	server.listen(settings["server"].port, () => {
 		console.log(`listening on port ${settings["server"].port}`)
 	})
+
+	server.on("error", (err) => {
+		console.error(err);
+
+		app.on("ready", () => {
+			const dialogOpts = {
+				type: 'error',
+				buttons: ['Close Replay', 'Continue'],
+				title: 'Another instance of Replay is running',
+				detail: "You have another instance of Replay running,\nIf you want to continue some features may not work"
+			}
+			dialog.showMessageBox(dialogOpts).then((returnValue) => {
+				if (returnValue.response === 0) {
+					app.exit();
+				}
+			})
+		})
+	})
+
 }

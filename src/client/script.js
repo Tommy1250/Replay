@@ -176,6 +176,10 @@ timeline.addEventListener('input', () => {
     player.currentTime = time;
 });
 
+ipcRenderer.on("timeLineReceive", (event, arg) => {
+    player.currentTime = arg
+})
+
 pause.onclick = () => {
     if (player.paused) {
         player.play()
@@ -317,7 +321,7 @@ function updatePlayer(event, {
             nowplaying.innerText = filter(songs.playlists[current.playlist][current.number]);
             nowplaying.onclick = () => {
                 getplaylist(current.playlist);
-                nodes[current.number * 2].focus();
+                nodes[current.number].focus();
             }
 
             if (current.playlist === "random") {
@@ -354,9 +358,8 @@ function updatePlayer(event, {
             });
             break;
         case "volume":
-            if (!player.muted)
-                volumeValue.innerText = `${Math.round(volume * 100)}%`;
             player.volume = volume;
+            ipcRenderer.send("volumeChange", volume)
             fs.writeFileSync(path.join(savesPath, "volume.txt"), volume.toString());
             break;
         case "seek":
@@ -478,7 +481,8 @@ function searchPlaylist(searchValue){
                         ipcRenderer.send("makeSongMenu", {
                             name: song,
                             playlist: folder,
-                            number: j
+                            number: j,
+                            addShow: true
                         });
                     }
                     btn.id = "removable";
@@ -486,18 +490,23 @@ function searchPlaylist(searchValue){
                     htmlsongs.appendChild(btn);
             
                     //make a br element
-                    const br = document.createElement("br");
-                    br.id = "removable";
-                    htmlsongs.appendChild(br);
+                    //const br = document.createElement("br");
+                    //br.id = "removable";
+                    //htmlsongs.appendChild(br);
             
                     nodes.push(btn);
-                    nodes.push(br);
+                    //nodes.push(br);
                 }
             }
         }
     }
 }
 
+ipcRenderer.on("showSong", (event, data) => {
+    search.value = "";
+    getplaylist(data.playlist);
+    nodes[data.number].focus();
+})
 
 function nextSong() {
     if (!played.includes(current.number)) played.push(current.number);
@@ -585,6 +594,11 @@ function changeTimelinePosition() {
     } else {
         timeValue.innerText = `${Math.floor(player.currentTime / 60) % 60}:${Math.floor(player.currentTime) % 60}/${Math.floor(player.duration / 60) % 60}:${Math.floor(player.duration) % 60}`;
     }
+
+    ipcRenderer.send("timeLineSend", {
+        currentTime: player.currentTime,
+        fullTime: player.duration
+    })
 }
 
 player.ontimeupdate = changeTimelinePosition;
@@ -635,7 +649,8 @@ function getplaylist(plname) {
         const element = songs.playlists[plname][i];
 
         const btn = document.createElement("button");
-        btn.textContent = filter(element);
+        btn.innerText = filter(element);
+
         btn.onclick = () => {
             updatePlayer("change", {
                 songNumber: {
@@ -649,7 +664,8 @@ function getplaylist(plname) {
             ipcRenderer.send("makeSongMenu", {
                 name: element,
                 playlist: plname,
-                number: i
+                number: i,
+                addShow: false
             });
         }
         btn.id = "removable";
@@ -657,12 +673,12 @@ function getplaylist(plname) {
         htmlsongs.appendChild(btn);
 
         //make a br element
-        const br = document.createElement("br");
-        br.id = "removable";
-        htmlsongs.appendChild(br);
+        //const br = document.createElement("br");
+        //br.id = "removable";
+        //htmlsongs.appendChild(br);
 
         nodes.push(btn);
-        nodes.push(br);
+        //nodes.push(br);
     }
     /*const btn = document.createElement("button");
     btn.style.visibility = "hidden";
@@ -671,6 +687,7 @@ function getplaylist(plname) {
     nodes.push(btn);*/
     latestPlaylist = plname;
     currentPlaylist.innerText = plname;
+    
     for (let i = 0; i < playlistshtml.length; i++) {
         /**
          * @type {HTMLElement}
@@ -714,7 +731,14 @@ function makegallery() {
             const btn = document.createElement("button");
             btn.textContent = element;
             btn.onclick = () => getplaylist(element);
-            btn.className = "py-[2px] text-left font-medium text-sm text-gray-500 hover:text-white focus:text-white"
+            btn.oncontextmenu = (e) => {
+                console.log("right click on " + btn.textContent);
+                ipcRenderer.send("makePlaylistMenu", {
+                    name: element
+                });
+            }
+
+            btn.className = "py-[2px] text-left font-medium text-sm text-gray-500 hover:text-white focus:text-gray-300"
 
             playlist.appendChild(btn);
 

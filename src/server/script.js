@@ -25,7 +25,14 @@ const remover = document.getElementById("remover");
 const loopbtn = document.getElementById("loop");
 const shufflebtn = document.getElementById("shuffle");
 
+const timeline = document.getElementById("timeline");
+const timeValue = document.getElementById("time");
+
 const currentplaylist = document.getElementById("cpl");
+
+const search = document.getElementById("search");
+const clearSearch = document.getElementById("clearSearch");
+const searchForm = document.getElementById("searchForm");
 
 let current = {
     number: 0,
@@ -36,6 +43,11 @@ let galleryDone = false;
 let playlistshtml = [];
 
 let recieved = false;
+
+let fullTime;
+let currentTime;
+
+let latestPlaylist = "";
 
 /**
  * 
@@ -105,6 +117,27 @@ socket.on("shuffle", (state) => {
     shufflebtn.innerText = state ? "Shuffle on" : "Shuffle off";
 })
 
+socket.on("timeLineChange", (time) => {
+    currentTime = time.currentTime;
+    fullTime = time.fullTime;
+
+    const percentagePosition = (100 * currentTime) / fullTime;
+    timeline.style.backgroundSize = `${percentagePosition}% 100%`;
+    timeline.value = percentagePosition;
+    
+    //make the time diffent if the duration is bigger than an hour
+    if (fullTime > 3600) {
+        timeValue.innerText = `${Math.floor(currentTime / 3600)}:${Math.floor(currentTime / 60) % 60}:${Math.floor(currentTime) % 60}/${Math.floor(fullTime / 3600)}:${Math.floor(fullTime / 60) % 60}:${Math.floor(fullTime) % 60}`;
+    } else {
+        timeValue.innerText = `${Math.floor(currentTime / 60) % 60}:${Math.floor(currentTime) % 60}/${Math.floor(fullTime / 60) % 60}:${Math.floor(fullTime) % 60}`;
+    }
+})
+
+timeline.addEventListener('input', () => {
+    const time = (timeline.value * fullTime) / 100;
+    socket.emit("timeChange", time);
+});
+
 loopbtn.onclick = () => {
     if (!socket.connected) return;
 
@@ -132,6 +165,10 @@ function updatePlayer(event, {
         case "change":
             current = songNumber
             nowplaying.innerText = filter(songs.playlists[current.playlist][current.number]);
+            nowplaying.onclick = () => {
+                getplaylist(current.playlist);
+                nodes[current.number * 2].focus();
+            }
             if (!recieved) {
                 socket.emit("song-change", current);
             } else {
@@ -149,6 +186,11 @@ function updatePlayer(event, {
             break;
     }
 }
+
+socket.on("volumeChange", volume => {
+    volumeValue.innerText = `${Math.round(volume * 100)}%`;
+    slider.value = volume * 100
+})
 
 socket.on("change", data => {
     updatePlayer("change", data);
@@ -206,8 +248,6 @@ function getplaylist(plname) {
     for (let i = 0; i < songs.playlists[plname].length; i++) {
         const element = songs.playlists[plname][i];
 
-
-
         const btn = document.createElement("button");
         btn.textContent = filter(element);
         btn.onclick = () => {
@@ -240,6 +280,86 @@ function getplaylist(plname) {
         const element = playlistshtml[i];
         playlist.removeChild(element);
     }
+    latestPlaylist = plname;
+}
+
+clearSearch.onclick = () => {
+    search.value = "";
+}
+
+searchForm.onsubmit = (event) => {
+    event.preventDefault();
+    console.log("search submit");
+    searchPlaylist(search.value);
+}
+
+search.oninput = () => {
+    searchPlaylist(search.value);
+}
+
+/**
+ * 
+ * @param {string} searchValue 
+ */
+ function searchPlaylist(searchValue){
+    console.log(`Starting search for ${searchValue}`);
+
+    if(searchValue === ""){
+        if(latestPlaylist === "none"){
+            removePlaylist();
+        }else{
+            getplaylist(latestPlaylist);
+        }
+    }else{
+        removePlaylist();
+        currentplaylist.innerText = "Search results"
+        playlist.style.visibility = "hidden";
+        htmlsongs.style.visibility = "visible";
+        
+        for (let i = 0; i < songs.folders.length; i++) {
+            const folder = songs.folders[i];
+            
+            for (let j = 0; j < songs.playlists[folder].length; j++) {
+                /**
+                 * @type {string}
+                 */
+                const song = songs.playlists[folder][j];
+        
+                if(song.toLowerCase().includes(searchValue.toLowerCase())){
+                    const btn = document.createElement("button");
+                    btn.textContent = filter(song);
+                    btn.onclick = () => {
+                        updatePlayer("change", {
+                            songNumber: {
+                                number: j,
+                                playlist: folder
+                            }
+                        });
+                    }
+                    btn.id = "removable";
+                    btn.className = "px-4 py-1 text-sm text-purple-600 font-semibold rounded-full border border-purple-200 hover:text-white hover:bg-purple-600 hover:border-transparent focus:outline-none focus:ring-2 focus:ring-purple-600 focus:ring-offset-2"
+                    htmlsongs.appendChild(btn);
+            
+                    //make a br element
+                    const br = document.createElement("br");
+                    br.id = "removable";
+                    htmlsongs.appendChild(br);
+            
+                    nodes.push(btn);
+                    nodes.push(br);
+                }
+            }
+        }
+        const btn = document.createElement("button");
+        btn.style.visibility = "hidden";
+        btn.id = "removable";
+        htmlsongs.appendChild(btn);
+        nodes.push(btn);
+        for (let i = 0; i < playlistshtml.length; i++) {
+            const element = playlistshtml[i];
+            playlist.removeChild(element);
+        }
+    }
 }
 
 remover.onclick = () => {
@@ -261,6 +381,8 @@ function removePlaylist() {
     nodes = []
     playlist.style.visibility = "visible";
     htmlsongs.style.visibility = "hidden";
+
+    latestPlaylist = "none";
 }
 
 /**
