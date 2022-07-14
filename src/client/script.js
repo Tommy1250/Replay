@@ -228,6 +228,7 @@ shuffle.onclick = () => {
 
 clearSearch.onclick = () => {
     search.value = "";
+    searchPlaylist(search.value);
 }
 
 searchForm.onsubmit = (event) => {

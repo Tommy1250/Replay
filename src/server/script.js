@@ -285,6 +285,7 @@ function getplaylist(plname) {
 
 clearSearch.onclick = () => {
     search.value = "";
+    searchPlaylist(search.value);
 }
 
 searchForm.onsubmit = (event) => {
