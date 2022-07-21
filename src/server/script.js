@@ -166,7 +166,10 @@ function updatePlayer(event, {
             current = songNumber
             nowplaying.innerText = filter(songs.playlists[current.playlist][current.number]);
             nowplaying.onclick = () => {
-                getplaylist(current.playlist);
+                if(latestPlaylist !== current.playlist) {
+                    removePlaylist();
+                    getplaylist(current.playlist);
+                }
                 nodes[current.number * 2].focus();
             }
             if (!recieved) {

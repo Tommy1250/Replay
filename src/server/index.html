@@ -17,6 +17,11 @@
         color: white;
     }
 
+    .main {
+        padding: .8rem;
+        margin-bottom: 12vh;
+    }
+
     .timeline {
         -webkit-appearance: none;
         width: 75%;
@@ -55,49 +60,52 @@
 </style>
 
 <body>
-    <div class="container px-2 py-2">
-        <input type="range" step="0.01" value="0" max="100" id="timeline" class="timeline">
-            <label id="time" for="timeline">0:10/2:22</label>
+    <div class="container">
+        <div class="main">
+            <button id="pause" 
+                class="px-4 py-1 text-sm text-white font-semibold rounded-full border border-white hover:text-black hover:bg-purple-600 hover:border-transparent focus:outline-none focus:ring-2 focus:ring-purple-600 focus:ring-offset-2">Pause/Resume</button>
+            <button id="mute"
+                class="px-4 py-1 text-sm text-white font-semibold rounded-full border border-white hover:text-black hover:bg-purple-600 hover:border-transparent focus:outline-none focus:ring-2 focus:ring-purple-600 focus:ring-offset-2">Toggle Mute</button>
+            <br>
+            <button id="prev"
+                class="px-4 py-1 text-sm text-white font-semibold rounded-full border border-white hover:text-black hover:bg-purple-600 hover:border-transparent focus:outline-none focus:ring-2 focus:ring-purple-600 focus:ring-offset-2">Previos</button>
+            <button id="next"
+                class="px-4 py-1 text-sm text-white font-semibold rounded-full border border-white hover:text-black hover:bg-purple-600 hover:border-transparent focus:outline-none focus:ring-2 focus:ring-purple-600 focus:ring-offset-2">Next</button>
+            <br>
+            <button id="seek5back"
+                class="px-4 py-1 text-sm text-white font-semibold rounded-full border border-white hover:text-black hover:bg-purple-600 hover:border-transparent focus:outline-none focus:ring-2 focus:ring-purple-600 focus:ring-offset-2">-5s</button>
+            <button id="seek5"
+                class="px-4 py-1 text-sm text-white font-semibold rounded-full border border-white hover:text-black hover:bg-purple-600 hover:border-transparent focus:outline-none focus:ring-2 focus:ring-purple-600 focus:ring-offset-2">+5s</button>
+            <br>
+            <button id="loop"
+                class="px-4 py-1 text-sm text-white font-semibold rounded-full border border-white hover:text-black hover:bg-purple-600 hover:border-transparent focus:outline-none focus:ring-2 focus:ring-purple-600 focus:ring-offset-2">Loop</button>
+            <button id="shuffle"
+                class="px-4 py-1 text-sm text-white font-semibold rounded-full border border-white hover:text-black hover:bg-purple-600 hover:border-transparent focus:outline-none focus:ring-2 focus:ring-purple-600 focus:ring-offset-2">Shuffle</button>
+            <br>
+            <br>
+            <form id="searchForm" class="flex flex-row">
+                <input type="text" id="search" class="text-black flex-grow-0 rounded-l-full w-2/3 px-1" placeholder="Search for songs..." autocomplete="off">
+                <button type="button" id="clearSearch"
+                    class="px-1 bg-white border-white text-gray-700 hover:text-gray-400 rounded-r-full">clear</button>
+            </form>
+            <h2 class="text-xl font-bold" id="cpl">Your Albums</h2>
+            <div id="playlists"></div>
+            <div id="songs" style="visibility: hidden;">
+                <button id="remover"
+                    class="px-4 py-1 text-sm text-red-600 font-semibold rounded-full border border-red-200 hover:text-white hover:bg-red-600 hover:border-transparent focus:outline-none focus:ring-2 focus:ring-red-600 focus:ring-offset-2">go back</button>
+                <br>
+            </div>
         </div>
-        <h2 id="np" class="text-2xl font-bold"></h2>
-        <div class="slidecontainer">
-            <label for="volume">volume:</label>
+    </div>
+    <div class="grid fixed p-[0.4rem] w-full bottom-[0] h-[75px] max-h-[150px] bg-neutral-900">
+        <h2 id="np" class="text-base font-bold overflow-hidden col-span-[1.7]"></h2>
+        <div class="slidecontainer col-span-[0.3]">
             <input type="range" min="1" max="100" id="volume">
             <label id="davolume" for="volume"></label>
         </div>
-        <br>
-        <button id="pause" 
-            class="px-4 py-1 text-sm text-white font-semibold rounded-full border border-white hover:text-black hover:bg-purple-600 hover:border-transparent focus:outline-none focus:ring-2 focus:ring-purple-600 focus:ring-offset-2">Pause/Resume</button>
-        <button id="mute"
-            class="px-4 py-1 text-sm text-white font-semibold rounded-full border border-white hover:text-black hover:bg-purple-600 hover:border-transparent focus:outline-none focus:ring-2 focus:ring-purple-600 focus:ring-offset-2">Toggle Mute</button>
-        <br>
-        <button id="prev"
-            class="px-4 py-1 text-sm text-white font-semibold rounded-full border border-white hover:text-black hover:bg-purple-600 hover:border-transparent focus:outline-none focus:ring-2 focus:ring-purple-600 focus:ring-offset-2">Previos</button>
-        <button id="next"
-            class="px-4 py-1 text-sm text-white font-semibold rounded-full border border-white hover:text-black hover:bg-purple-600 hover:border-transparent focus:outline-none focus:ring-2 focus:ring-purple-600 focus:ring-offset-2">Next</button>
-        <br>
-        <button id="seek5back"
-            class="px-4 py-1 text-sm text-white font-semibold rounded-full border border-white hover:text-black hover:bg-purple-600 hover:border-transparent focus:outline-none focus:ring-2 focus:ring-purple-600 focus:ring-offset-2">-5s</button>
-        <button id="seek5"
-            class="px-4 py-1 text-sm text-white font-semibold rounded-full border border-white hover:text-black hover:bg-purple-600 hover:border-transparent focus:outline-none focus:ring-2 focus:ring-purple-600 focus:ring-offset-2">+5s</button>
-        <br>
-        <button id="loop"
-            class="px-4 py-1 text-sm text-white font-semibold rounded-full border border-white hover:text-black hover:bg-purple-600 hover:border-transparent focus:outline-none focus:ring-2 focus:ring-purple-600 focus:ring-offset-2">Loop</button>
-        <button id="shuffle"
-            class="px-4 py-1 text-sm text-white font-semibold rounded-full border border-white hover:text-black hover:bg-purple-600 hover:border-transparent focus:outline-none focus:ring-2 focus:ring-purple-600 focus:ring-offset-2">Shuffle</button>
-        <br>
-        <br>
-        <form id="searchForm" class="flex flex-row">
-            <input type="text" id="search" class="text-black flex-grow-0 rounded-l-full w-2/3 px-1" placeholder="Search for songs..." autocomplete="off">
-            <button type="button" id="clearSearch"
-                class="px-1 bg-white border-white text-gray-700 hover:text-gray-400 rounded-r-full">clear</button>
-        </form>
-        <h2 class="text-xl font-bold" id="cpl">Your Albums</h2>
-        <div id="playlists"></div>
-        <div id="songs" style="visibility: hidden;">
-            <button id="remover"
-                class="px-4 py-1 text-sm text-red-600 font-semibold rounded-full border border-red-200 hover:text-white hover:bg-red-600 hover:border-transparent focus:outline-none focus:ring-2 focus:ring-red-600 focus:ring-offset-2">go back</button>
-            <br>
+        <div class="col-span-2">
+            <input type="range" step="0.01" value="0" max="100" id="timeline" class="timeline">
+            <label id="time" for="timeline">0:10/2:22</label>
         </div>
     </div>
 </body>
