@@ -50,6 +50,7 @@ let galleryDone = false;
 let firstTime = true;
 
 const fs = require("fs");
+const mm = require('music-metadata');
 
 const {
     getGallery
@@ -322,7 +323,7 @@ function updatePlayer(event, {
             current = songNumber
             nowplaying.innerText = filter(songs.playlists[current.playlist][current.number]);
             nowplaying.onclick = () => {
-                getplaylist(current.playlist);
+                if(current.playlist !== currentPlaylist.innerText) getplaylist(current.playlist);
                 nodes[current.number].focus();
             }
 
@@ -460,23 +461,50 @@ function searchPlaylist(searchValue){
 
         let songsConut = 0;
         for (let i = 0; i < songs.folders.length; i++) {
-            const folder = songs.folders[i];
+            const songsFolder = songs.folders[i];
             
-            for (let j = 0; j < songs.playlists[folder].length; j++) {
+            for (let j = 0; j < songs.playlists[songsFolder].length; j++) {
                 /**
                  * @type {string}
                  */
-                const song = songs.playlists[folder][j];
+                const song = songs.playlists[songsFolder][j];
         
                 if(song.toLowerCase().includes(searchValue.toLowerCase())){
+
                     songsConut++;
                     const btn = document.createElement("button");
-                    btn.textContent = filter(song);
+                    const songname = document.createElement("p");
+                    const songDuration = document.createElement("p");
+
+                    songname.innerText = filter(song);
+                    btn.appendChild(songname);
+
+                    if(settings["metadata"].status){
+                        let songPath = ""
+                
+                        if (songsFolder === "random") {
+                            songPath = path.join(folder, songs.playlists[songsFolder][j]);
+                        } else {
+                            songPath = path.join(folder, songsFolder, songs.playlists[songsFolder][j]);
+                        }
+                
+                        mm.parseFile(songPath).then(data => {
+                            if(data.format.duration){
+                                if (data.format.duration > 3600) {
+                                    songDuration.innerText = `${Math.floor(data.format.duration / 3600) < 10 ? `0${Math.floor(data.format.duration / 3600)}`:`${Math.floor(data.format.duration / 3600)}`}:${Math.floor(data.format.duration / 60) % 60 < 10 ? `0${Math.floor(data.format.duration / 60) % 60}`:`${Math.floor(data.format.duration / 60) % 60}`}:${Math.floor(data.format.duration) % 60 < 10 ? `0${Math.floor(data.format.duration) % 60}`:`${Math.floor(data.format.duration) % 60}`}`;
+                                } else {
+                                    songDuration.innerText = `${Math.floor(data.format.duration / 60) % 60 < 10 ? `0${Math.floor(data.format.duration / 60) % 60}`:`${Math.floor(data.format.duration / 60) % 60}`}:${Math.floor(data.format.duration) % 60 < 10 ? `0${Math.floor(data.format.duration) % 60}`:`${Math.floor(data.format.duration) % 60}`}`;
+                                }
+                                btn.appendChild(songDuration);
+                            }
+                        });
+                    }
+
                     btn.onclick = () => {
                         updatePlayer("change", {
                             songNumber: {
                                 number: j,
-                                playlist: folder
+                                playlist: songsFolder
                             }
                         });
                     }
@@ -484,13 +512,14 @@ function searchPlaylist(searchValue){
                         console.log("right click on " + btn.textContent);
                         ipcRenderer.send("makeSongMenu", {
                             name: song,
-                            playlist: folder,
+                            playlist: songsFolder,
                             number: j,
                             addShow: true
                         });
                     }
                     btn.id = "removable";
-                    btn.className = "px-2 text-left py-1 w-full text-sm text-gray-300 font-medium rounded-md hover:text-white hover:bg-white hover:bg-opacity-20 hover:border-transparent focus:border"
+                    btn.className = "grid px-2 text-left py-1 w-full text-sm text-gray-300 font-medium rounded-md hover:text-white hover:bg-white hover:bg-opacity-20 hover:border-transparent focus:border"
+                    btn.style.gridTemplateColumns = "1fr auto";
                     htmlsongs.appendChild(btn);
             
                     //make a br element
@@ -650,12 +679,41 @@ function getplaylist(plname) {
 
     removePlaylist();
 
+    let playlistLength = 0;
     let songsCount = 0;
     for (let i = 0; i < songs.playlists[plname].length; i++) {
         const element = songs.playlists[plname][i];
         songsCount++;
+
         const btn = document.createElement("button");
-        btn.innerText = filter(element);
+        const songname = document.createElement("p");
+        const songDuration = document.createElement("p");
+
+        songname.innerText = filter(element);
+        btn.appendChild(songname);
+
+        if(settings["metadata"].status){
+            let songPath = ""
+    
+            if (plname === "random") {
+                songPath = path.join(folder, songs.playlists[plname][i]);
+            } else {
+                songPath = path.join(folder, plname, songs.playlists[plname][i]);
+            }
+    
+            mm.parseFile(songPath).then(data => {
+                if(data.format.duration){
+                    playlistLength += data.format.duration;
+        
+                    if (data.format.duration > 3600) {
+                        songDuration.innerText = `${Math.floor(data.format.duration / 3600) < 10 ? `0${Math.floor(data.format.duration / 3600)}`:`${Math.floor(data.format.duration / 3600)}`}:${Math.floor(data.format.duration / 60) % 60 < 10 ? `0${Math.floor(data.format.duration / 60) % 60}`:`${Math.floor(data.format.duration / 60) % 60}`}:${Math.floor(data.format.duration) % 60 < 10 ? `0${Math.floor(data.format.duration) % 60}`:`${Math.floor(data.format.duration) % 60}`}`;
+                    } else {
+                        songDuration.innerText = `${Math.floor(data.format.duration / 60) % 60 < 10 ? `0${Math.floor(data.format.duration / 60) % 60}`:`${Math.floor(data.format.duration / 60) % 60}`}:${Math.floor(data.format.duration) % 60 < 10 ? `0${Math.floor(data.format.duration) % 60}`:`${Math.floor(data.format.duration) % 60}`}`;
+                    }
+                    btn.appendChild(songDuration);
+                }
+            });
+        }
 
         btn.onclick = () => {
             updatePlayer("change", {
@@ -675,7 +733,8 @@ function getplaylist(plname) {
             });
         }
         btn.id = "removable";
-        btn.className = "px-2 text-left py-1 w-full text-sm text-gray-300 font-medium rounded-md hover:text-white hover:bg-white hover:bg-opacity-20 hover:border-transparent focus:border"
+        btn.className = "grid px-2 text-left py-1 w-full text-sm text-gray-300 font-medium rounded-md hover:text-white hover:bg-white hover:bg-opacity-20 hover:border-transparent focus:border"
+        btn.style.gridTemplateColumns = "1fr auto";
         htmlsongs.appendChild(btn);
 
         //make a br element
@@ -695,6 +754,11 @@ function getplaylist(plname) {
     currentPlaylist.innerText = plname;
     plinfo.innerText = "";
     plinfo.innerText += `${songsCount} songs`
+    if(settings["metadata"].status){
+        setTimeout(() => {
+            plinfo.innerText += `, ${Math.floor(playlistLength / 3600) < 10 ? `0${Math.floor(playlistLength / 3600)}`:`${Math.floor(playlistLength / 3600)}`}:${Math.floor(playlistLength / 60) % 60 < 10 ? `0${Math.floor(playlistLength / 60) % 60}`:`${Math.floor(playlistLength / 60) % 60}`}:${Math.floor(playlistLength) % 60 < 10 ? `0${Math.floor(playlistLength) % 60}`:`${Math.floor(playlistLength) % 60}`}`
+        }, 200);
+    }
     
     for (let i = 0; i < playlistshtml.length; i++) {
         /**

@@ -3,6 +3,7 @@ const tray = document.getElementById("tray");
 const discord = document.getElementById("discord");
 const update = document.getElementById("autoupdate");
 const search = document.getElementById("search");
+const metadata = document.getElementById("metadata");
 
 const server = document.getElementById("server");
 const port = document.getElementById("port");
@@ -13,6 +14,7 @@ const updatestatus = document.getElementById("updatestatus");
 const serverstatus = document.getElementById("serverstatus");
 const serveradress = document.getElementById("serveradress");
 const searchStatus = document.getElementById("searchstatus");
+const metadataStatus = document.getElementById("metadatastatus");
 
 const ip = require("ip");
 const fs = require("fs");
@@ -41,6 +43,9 @@ ipcRenderer.on("savesFolder", (event, data) => {
 
     search.checked = settings["search"].status;
     searchStatus.innerText = settings["search"].status ? "enabled" : "disabled";
+
+    metadata.checked = settings["metadata"].status;
+    metadataStatus.innerText = settings["metadata"].status ? "enabled" : "disabled";
 
     server.checked = settings["server"].enabled === "1" ? true:false
     serverstatus.innerText = settings["server"].enabled === "1" ? "enabled" : "disabled";
@@ -80,6 +85,14 @@ server.onclick = () => {
     serverstatus.innerText = server.checked ? "enabled" : "disabled";
 }
 
+search.onclick = () => {
+    searchStatus.innerText = search.checked ? "enabled" : "disabled";
+}
+
+metadata.onclick = () => {
+    metadataStatus.innerText = metadata.checked ? "enabled" : "disabled";
+}
+
 form.onsubmit = (ev) => {
     ev.preventDefault();
     settings["tray"].status = tray.checked ? "1" : "0";
@@ -88,6 +101,7 @@ form.onsubmit = (ev) => {
     settings["server"].enabled = server.checked ? "1" : "0";
     settings["server"].port = port.value.toString();
     settings["search"].status = search.checked;
+    settings["metadata"].status = metadata.checked;
     saveSettings(settings);
 }
 

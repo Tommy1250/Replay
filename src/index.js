@@ -94,7 +94,7 @@ if (fs.existsSync(savesPath)) {
 		fs.mkdirSync(savesPath);
 		fs.readdirSync(path.join(__dirname, "saves")).forEach(file => {
 			if (!file.includes("example"))
-				fs.copyFileSync(path.join(__dirname, "saves/" + file), path.join(savesPath, file));
+				fs.copyFileSync(path.join(__dirname, "saves", file), path.join(savesPath, file));
 		});
 	}
 	settings = JSON.parse(fs.readFileSync(path.join(savesPath, "settings.json"), "utf-8"));
@@ -102,7 +102,7 @@ if (fs.existsSync(savesPath)) {
 	fs.mkdirSync(savesPath);
 	fs.readdirSync(path.join(__dirname, "saves")).forEach(file => {
 		if (!file.includes("example"))
-			fs.copyFileSync(path.join(__dirname, "saves/" + file), path.join(savesPath, file));
+			fs.copyFileSync(path.join(__dirname, "saves", file), path.join(savesPath, file));
 	});
 	settings = JSON.parse(fs.readFileSync(path.join(savesPath, "settings.json"), "utf-8"));
 }
