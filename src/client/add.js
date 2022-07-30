@@ -10,6 +10,7 @@ const {
 const http = require('http');
 const fs = require("fs");
 const path = require("path");
+//const selectedFolder = document.getElementById("folders");
 
 const ytdl = require('ytdl-core');
 const ytkey = fs.readFileSync(path.join(__dirname, "../saves/ytkey.txt"), "utf-8");
@@ -21,6 +22,10 @@ const videoFinder = async (query) => {
     const resault = await ytsearch(query);
     return (resault.videos.length > 1) ? resault.videos : null
 }
+
+/*const {
+    getGallery
+} = require("../gallery");*/
 
 const lyricsFinder = require("lyrics-finder");
 
@@ -53,12 +58,21 @@ function downloadSong() {
 
 let savesPath = "";
 let musicFolder = "";
+let settings = {};
 
 ipcRenderer.send("getFolder");
 
 ipcRenderer.on("savesFolder", (event, data) => {
     savesPath = data;
     musicFolder = fs.readFileSync(path.join(savesPath, "folder.txt"), "utf-8");
+    settings = JSON.parse(fs.readFileSync(path.join(savesPath, "settings.json"), "utf-8"));
+    /*getGallery(musicFolder).then(songs => {
+        let options = songs.folders.map(folder => `<option value=${folder}>${folder}</option>`).join('\n');
+
+        options += `<option value="use default">use default</option>`
+
+        selectedFolder.innerHTML = options;
+    });*/
 });
 
 /**
@@ -136,6 +150,8 @@ async function download(url) {
                     title: video.title
                 })
             }
+
+            img.loading = "lazy";
             
             btn.onclick = () => {
                 list.innerHTML = "";
@@ -219,7 +235,8 @@ async function downloadAudio({
                     file.close();
                     status.innerText += `\ndownloaded: ${title}.`;
                     console.log("Download Completed");
-                    searchLyrics(title, fs.readFileSync(path.join(savesPath, "lyrics.txt"), "utf-8"));
+                    if(settings["search"].status)
+                        searchLyrics(title, fs.readFileSync(path.join(savesPath, "lyrics.txt"), "utf-8"));
                 });
             });
     
@@ -246,7 +263,8 @@ async function downloadAudio({
                             if (err) return console.error(`there was an error with deleting the file ${thepath}\n${err.message}`);
                             status.innerText += `\n${title} was deleted successfully and replaced with the mp3 file\n(basically the file was converted)`;
                             console.log(`${title} was deleted successfully and replaced with the mp3 file`);
-                            searchLyrics(title, fs.readFileSync(path.join(savesPath, "lyrics.txt"), "utf-8"));
+                            if(settings["search"].status)
+                                searchLyrics(title, fs.readFileSync(path.join(savesPath, "lyrics.txt"), "utf-8"));
                         })
                     })
                 })

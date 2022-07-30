@@ -510,6 +510,10 @@ Ensure the default browser behavior of the `hidden` attribute.
   position: fixed;
 }
 
+.top-\[0\] {
+  top: 0;
+}
+
 .top-1 {
   top: 8px;
 }
@@ -530,20 +534,8 @@ Ensure the default browser behavior of the `hidden` attribute.
   bottom: 0;
 }
 
-.top-\[0\] {
-  top: 0;
-}
-
 .col-span-2 {
   grid-column: span 2 / span 2;
-}
-
-.mb-auto {
-  margin-bottom: auto;
-}
-
-.mb-\[17vh\] {
-  margin-bottom: 17vh;
 }
 
 .mb-\[12vh\] {
@@ -590,28 +582,12 @@ Ensure the default browser behavior of the `hidden` attribute.
   cursor: pointer;
 }
 
-.grid-rows-2 {
-  grid-template-rows: repeat(2, minmax(0, 1fr));
-}
-
-.grid-rows-1 {
-  grid-template-rows: repeat(1, minmax(0, 1fr));
-}
-
 .flex-row {
   flex-direction: row;
 }
 
-.overflow-auto {
-  overflow: auto;
-}
-
 .overflow-hidden {
   overflow: hidden;
-}
-
-.scroll-smooth {
-  scroll-behavior: smooth;
 }
 
 .rounded-full {
@@ -760,14 +736,14 @@ Ensure the default browser behavior of the `hidden` attribute.
   line-height: 2rem;
 }
 
-.text-4xl {
-  font-size: 2.25rem;
-  line-height: 2.5rem;
-}
-
 .text-xl {
   font-size: 1.25rem;
   line-height: 1.75rem;
+}
+
+.text-4xl {
+  font-size: 2.25rem;
+  line-height: 2.5rem;
 }
 
 .text-base {
@@ -785,6 +761,14 @@ Ensure the default browser behavior of the `hidden` attribute.
 
 .font-medium {
   font-weight: 500;
+}
+
+.font-light {
+  font-weight: 300;
+}
+
+.font-normal {
+  font-weight: 400;
 }
 
 .text-blue-600 {
@@ -825,6 +809,11 @@ Ensure the default browser behavior of the `hidden` attribute.
 .text-purple-600 {
   --tw-text-opacity: 1;
   color: rgb(147 51 234 / var(--tw-text-opacity));
+}
+
+.text-gray-600 {
+  --tw-text-opacity: 1;
+  color: rgb(75 85 99 / var(--tw-text-opacity));
 }
 
 .drop-shadow-2xl {

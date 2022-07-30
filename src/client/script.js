@@ -11,6 +11,7 @@ const nextbtn = document.getElementById("next");
 const prevbtn = document.getElementById("prev");
 const nowplaying = document.getElementById("np");
 const currentPlaylist = document.getElementById("currentplaylist");
+const plinfo = document.getElementById("plinfo");
 
 const pause = document.getElementById("pause");
 const timeline = document.getElementById("timeline");
@@ -457,6 +458,7 @@ function searchPlaylist(searchValue){
         currentPlaylist.innerText = "Search results"
         removePlaylist();
 
+        let songsConut = 0;
         for (let i = 0; i < songs.folders.length; i++) {
             const folder = songs.folders[i];
             
@@ -467,6 +469,7 @@ function searchPlaylist(searchValue){
                 const song = songs.playlists[folder][j];
         
                 if(song.toLowerCase().includes(searchValue.toLowerCase())){
+                    songsConut++;
                     const btn = document.createElement("button");
                     btn.textContent = filter(song);
                     btn.onclick = () => {
@@ -500,6 +503,7 @@ function searchPlaylist(searchValue){
                 }
             }
         }
+        plinfo.innerText = `found ${songsConut} songs`;
     }
 }
 
@@ -646,9 +650,10 @@ function getplaylist(plname) {
 
     removePlaylist();
 
+    let songsCount = 0;
     for (let i = 0; i < songs.playlists[plname].length; i++) {
         const element = songs.playlists[plname][i];
-
+        songsCount++;
         const btn = document.createElement("button");
         btn.innerText = filter(element);
 
@@ -688,6 +693,8 @@ function getplaylist(plname) {
     nodes.push(btn);*/
     latestPlaylist = plname;
     currentPlaylist.innerText = plname;
+    plinfo.innerText = "";
+    plinfo.innerText += `${songsCount} songs`
     
     for (let i = 0; i < playlistshtml.length; i++) {
         /**
