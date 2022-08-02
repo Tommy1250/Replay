@@ -3,6 +3,10 @@ const downloadURL = document.getElementById("yt-link");
 const list = document.getElementById("list")
 const status = document.getElementById("status");
 
+const minimiseButton = document.getElementById("minimise-button");
+const fullscreenButton = document.getElementById("fullscreen-button");
+const closeButton = document.getElementById("close-button");
+
 const {
     ipcRenderer
 } = require('electron');
@@ -43,6 +47,18 @@ const illegalChars = [
     ":"
 ]
 
+minimiseButton.onclick = () => {
+    ipcRenderer.send("minimise-button-add");
+}
+
+fullscreenButton.onclick = () => {
+    ipcRenderer.send("fullscreen-button-add");
+}
+
+closeButton.onclick = () => {
+    ipcRenderer.send("close-button-add")
+}
+
 form.onsubmit = async (event) => {
     event.preventDefault();
     downloadSong();
@@ -81,7 +97,7 @@ ipcRenderer.on("savesFolder", (event, data) => {
  * @returns 
  */
 async function download(url) {
-    if(!fs.existsSync(musicFolder)) return status.innerText = "please choose a folder then restart this window to be able to download songs";
+    if(!fs.existsSync(musicFolder)) return status.innerText = "please choose a folder then restart this window to be able to download songs\n";
     
     if (url.match(/^https?:\/\/(www.youtube.com|youtube.com)\/playlist(.*)$/)) {
         const playlist = await youtube.getPlaylist(url);
@@ -100,7 +116,7 @@ async function download(url) {
                 }, true, changeName(playlist.title));
             } catch (error) {
                 console.warn(`an error happened\n${error}`);
-                status.innerText = `\nan error happened\n${error}`;
+                status.innerText = `an error happened\n${error}\n`;
             }
         }
 
@@ -129,11 +145,11 @@ async function download(url) {
 
             btn.innerText = "Download";
             btn.id = `${i}`;
-            btn.style.cursor = "pointer";
-
+            btn.className = "px-3 py-[0.7] text-sm text-blue-600 font-semibold rounded-full border border-blue-200 hover:text-white hover:bg-blue-600 hover:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2"
+            
             btn2.innerText = "Stream";
             btn2.id = `${i}`;
-            btn2.style.cursor = "pointer";
+            btn2.className = "px-3 py-[0.7] text-sm text-blue-600 font-semibold rounded-full border border-blue-200 hover:text-white hover:bg-blue-600 hover:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2"
 
             name.innerText = `[${video.timestamp}]${video.title}`;
             name.htmlFor = i;
@@ -219,7 +235,9 @@ async function downloadAudio({
         if (stderr) {
             console.log("ffmpeg not found");
 
-            status.innerText += `\nffmpeg not found tring to download via the server`;
+            status.innerText += `ffmpeg not found trying to download via the server\n`;
+            status.innerHTML += `<br>it is recommended to download ffmpeg to get the faster download speeds and be able to download playlists consistently
+            download ffmpeg <a href="https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-win64-gpl.zip">From here</a> any version works but I use this\n`
 
             const file = fs.createWriteStream(path2);
 
@@ -227,13 +245,13 @@ async function downloadAudio({
                 response.pipe(file);
 
                 response.on("open", () => {
-                    status.innerText += `\ndownloading ${title}`;
+                    status.innerText += `downloading ${title}\n`;
                 });
 
                 // after download completed close filestream
                 file.on("finish", () => {
                     file.close();
-                    status.innerText += `\ndownloaded: ${title}.`;
+                    status.innerText += `downloaded: ${title}.\n`;
                     console.log("Download Completed");
                     if(settings["search"].status)
                         searchLyrics(title, fs.readFileSync(path.join(savesPath, "lyrics.txt"), "utf-8"));
@@ -250,18 +268,18 @@ async function downloadAudio({
                 fs.createWriteStream(thepath)
                 .on("ready", () => {
                     console.log(`downloading: ${title}...`);
-                    status.innerText += `\ndownloading: ${title}...`;
+                    status.innerText += `downloading: ${title}...\n`;
                 })
                 .on("finish", () => {
                     console.log(`downloaded: ${title}.`);
-                    status.innerText += `\ndownloaded: ${title}.`;
+                    status.innerText += `downloaded: ${title}.\n`;
                     exec(`ffmpeg -i "${thepath}" "${path2}"`, (err, sout, serr) => {
                         if (err) console.error(err);
                         console.log("converted the file with the right metadata");
-                        status.innerText += "\nconverted the file with the right metadata";
+                        status.innerText += "converted the file with the right metadata\n";
                         fs.rm(thepath, (err) => {
-                            if (err) return console.error(`there was an error with deleting the file ${thepath}\n${err.message}`);
-                            status.innerText += `\n${title} was deleted successfully and replaced with the mp3 file\n(basically the file was converted)`;
+                            if (err) return console.error(`there was an error with deleting the file ${thepath}\n${err.message}\n`);
+                            status.innerText += `${title} was deleted successfully and replaced with the mp3 file\n(basically the file was converted)\n`;
                             console.log(`${title} was deleted successfully and replaced with the mp3 file`);
                             if(settings["search"].status)
                                 searchLyrics(title, fs.readFileSync(path.join(savesPath, "lyrics.txt"), "utf-8"));
@@ -270,7 +288,7 @@ async function downloadAudio({
                 })
                 .on("error", (err) => {
                     console.error(`there was an error while downloading ${title}\n${err}`)
-                    status.innerText += `\nthere was an error while downloading ${title}\n${err}`
+                    status.innerText += `\nthere was an error while downloading ${title}\n${err}\n`
                 })
             );
         }
@@ -279,21 +297,21 @@ async function downloadAudio({
 
 function searchLyrics(title, lyricsFolder){
     console.log(`searching for lyrics for ${title}`);
-    status.innerText += `\nsearching for lyrics for ${title}`;
+    status.innerText += `searching for lyrics for ${title}\n`;
 
     lyricsFinder("", title)
     .then(lyrics => {
         if (lyrics) {
             console.log(`found lyrics for ${title}`);
-            status.innerText += `\nfound lyrics for ${title}`;
+            status.innerText += `found lyrics for ${title}\n`;
             fs.writeFileSync(path.join(lyricsFolder, `${changeName(title)}.txt`), lyrics);
-            status.innerText += `\nlyrics for ${title} was saved`;
+            status.innerText += `lyrics for ${title} was saved\n`;
         } else {
             console.log(`couldn't find lyrics for ${title}`);
-            status.innerText += `\ncouldn't find lyrics for ${title}`;
+            status.innerText += `couldn't find lyrics for ${title}\n`;
         }
     }).catch(err => {
         console.error(err);
-        status.innerText += `\n${err}`;
+        status.innerText += `${err}\n`;
     })
 }

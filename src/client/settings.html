@@ -10,12 +10,56 @@
             background-color: rgb(18, 17, 17);
             color: white;
         }
+
+        ::-webkit-scrollbar {
+            width: 5px;
+        }
+
+        /* Track */
+        ::-webkit-scrollbar-track {
+            background: #292929; 
+        }
+
+        ::-webkit-scrollbar-track-piece {
+            background: #292929;
+        }
+            
+        /* Handle */
+        ::-webkit-scrollbar-thumb {
+            background: #888; 
+        }
+
+        /* Handle on hover */
+        ::-webkit-scrollbar-thumb:hover {
+            background: #555; 
+        }
+
+        .bar {
+            -webkit-app-region: drag;
+            height: 25px;
+            width: 100%;
+            display: grid;
+            grid-template-columns: 1fr auto;
+            grid-template-rows: none;
+            background-color: rgb(25, 24, 24);
+        }
+
+        .no-drag {
+            -webkit-app-region: no-drag;
+        }
+
+        .icon {
+            width: 20px;
+            height: 20px;
+            object-fit: contain;
+            align-self: center;
+        }
     </style>
     <script src="settings.js" defer></script>
 </head>
 
 <body>
-    <form class="fixed top-1 left-1" id="main">
+    <form class="mt-4 p-1" id="main">
         <div>
             <h1>Discord:</h1>
             <input id="discord" type="checkbox">
@@ -58,9 +102,19 @@
             <label for="lyrics">Lyrics Folder Location</label>
             <input id="lyrics" type="text" readonly class="text-black rounded-md border-2 border-black overflow-hidden pr-6 w-full">
         </div>
-        <input type="submit" value="Submit" class=" fixed right-1 py-[0.5] px-[0.5] border rounded-md border-white bg-white text-black hover:border-black hover:text-white hover:bg-black">
+        <input type="submit" value="Submit" class="fixed right-1 py-[0.5] px-[0.5] border rounded-md border-white bg-white text-black hover:border-black hover:text-white hover:bg-black">
     </form>
     <footer class="fixed bottom-1 left-1">All Settings Require Application Restart</footer>
+    <div class="bar bg-opacity-50 fixed top-[0]">
+        <div>
+            <p class="px-1">Settings</p>
+        </div>
+        <div>
+            <button class="no-drag hover:bg-gray-600 bg-opacity-75 w-5 h-4 px-1" id="minimise-button"><img class="icon" src="../assets/minimise.png"></button>
+            <button class="no-drag hover:bg-gray-600 bg-opacity-75 w-5 h-4 px-1" id="fullscreen-button"><img class="icon" src="../assets/maximise.png"></button>
+            <button class="no-drag hover:bg-red-600 bg-opacity-75 w-5 h-4 px-1" id="close-button"><img class="icon" src="../assets/cross.png"></button>
+        </div>
+    </div>
 </body>
 
 </html>

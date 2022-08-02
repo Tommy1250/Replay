@@ -12,6 +12,7 @@ const prevbtn = document.getElementById("prev");
 const nowplaying = document.getElementById("np");
 const currentPlaylist = document.getElementById("currentplaylist");
 const plinfo = document.getElementById("plinfo");
+const pltime = document.getElementById("pltime");
 
 const pause = document.getElementById("pause");
 const timeline = document.getElementById("timeline");
@@ -35,6 +36,15 @@ const search = document.getElementById("search");
 const clearSearch = document.getElementById("clearSearch");
 const searchForm = document.getElementById("searchForm");
 
+const fileButton = document.getElementById("file-button");
+const lyricsButton = document.getElementById("lyrics-button");
+const settingsButton = document.getElementById("settings-button");
+const infoButton = document.getElementById("info-button");
+
+const minimiseButton = document.getElementById("minimise-button");
+const fullscreenButton = document.getElementById("fullscreen-button");
+const closeButton = document.getElementById("close-button");
+
 /**
  * 
  * @param {string} file 
@@ -50,7 +60,7 @@ let galleryDone = false;
 let firstTime = true;
 
 const fs = require("fs");
-const mm = require('music-metadata');
+const musicMetadata = require('music-metadata');
 
 const {
     getGallery
@@ -158,6 +168,34 @@ ipcRenderer.on("loop", () => {
 ipcRenderer.on("shuffle", () => {
     shuffle.click();
 })
+
+fileButton.onclick = () => {
+    ipcRenderer.send("file-button");
+}
+
+lyricsButton.onclick = () => {
+    ipcRenderer.send("lyrics-button");
+}
+
+settingsButton.onclick = () => {
+    ipcRenderer.send("settings-button");
+}
+
+infoButton.onclick = () => {
+    ipcRenderer.send("info-button");
+}
+
+minimiseButton.onclick = () => {
+    ipcRenderer.send("minimise-button");
+}
+
+fullscreenButton.onclick = () => {
+    ipcRenderer.send("fullscreen-button");
+}
+
+closeButton.onclick = () => {
+    ipcRenderer.send("close-button")
+}
 
 slider.addEventListener("input", () => {
     updatePlayer("volume", {
@@ -488,7 +526,7 @@ function searchPlaylist(searchValue){
                             songPath = path.join(folder, songsFolder, songs.playlists[songsFolder][j]);
                         }
                 
-                        mm.parseFile(songPath).then(data => {
+                        musicMetadata.parseFile(songPath).then(data => {
                             if(data.format.duration){
                                 if (data.format.duration > 3600) {
                                     songDuration.innerText = `${Math.floor(data.format.duration / 3600) < 10 ? `0${Math.floor(data.format.duration / 3600)}`:`${Math.floor(data.format.duration / 3600)}`}:${Math.floor(data.format.duration / 60) % 60 < 10 ? `0${Math.floor(data.format.duration / 60) % 60}`:`${Math.floor(data.format.duration / 60) % 60}`}:${Math.floor(data.format.duration) % 60 < 10 ? `0${Math.floor(data.format.duration) % 60}`:`${Math.floor(data.format.duration) % 60}`}`;
@@ -533,6 +571,7 @@ function searchPlaylist(searchValue){
             }
         }
         plinfo.innerText = `found ${songsConut} songs`;
+        pltime.innerText = "";
     }
 }
 
@@ -694,17 +733,17 @@ function getplaylist(plname) {
 
         if(settings["metadata"].status){
             let songPath = ""
-    
+
             if (plname === "random") {
                 songPath = path.join(folder, songs.playlists[plname][i]);
             } else {
                 songPath = path.join(folder, plname, songs.playlists[plname][i]);
             }
-    
-            mm.parseFile(songPath).then(data => {
+
+            musicMetadata.parseFile(songPath).then(data => {
                 if(data.format.duration){
                     playlistLength += data.format.duration;
-        
+
                     if (data.format.duration > 3600) {
                         songDuration.innerText = `${Math.floor(data.format.duration / 3600) < 10 ? `0${Math.floor(data.format.duration / 3600)}`:`${Math.floor(data.format.duration / 3600)}`}:${Math.floor(data.format.duration / 60) % 60 < 10 ? `0${Math.floor(data.format.duration / 60) % 60}`:`${Math.floor(data.format.duration / 60) % 60}`}:${Math.floor(data.format.duration) % 60 < 10 ? `0${Math.floor(data.format.duration) % 60}`:`${Math.floor(data.format.duration) % 60}`}`;
                     } else {
@@ -712,6 +751,7 @@ function getplaylist(plname) {
                     }
                     btn.appendChild(songDuration);
                 }
+                pltime.innerText = `, ${Math.floor(playlistLength / 3600) < 10 ? `0${Math.floor(playlistLength / 3600)}`:`${Math.floor(playlistLength / 3600)}`}:${Math.floor(playlistLength / 60) % 60 < 10 ? `0${Math.floor(playlistLength / 60) % 60}`:`${Math.floor(playlistLength / 60) % 60}`}:${Math.floor(playlistLength) % 60 < 10 ? `0${Math.floor(playlistLength) % 60}`:`${Math.floor(playlistLength) % 60}`}`
             });
         }
 
@@ -752,13 +792,7 @@ function getplaylist(plname) {
     nodes.push(btn);*/
     latestPlaylist = plname;
     currentPlaylist.innerText = plname;
-    plinfo.innerText = "";
-    plinfo.innerText += `${songsCount} songs`
-    if(settings["metadata"].status){
-        setTimeout(() => {
-            plinfo.innerText += `, ${Math.floor(playlistLength / 3600) < 10 ? `0${Math.floor(playlistLength / 3600)}`:`${Math.floor(playlistLength / 3600)}`}:${Math.floor(playlistLength / 60) % 60 < 10 ? `0${Math.floor(playlistLength / 60) % 60}`:`${Math.floor(playlistLength / 60) % 60}`}:${Math.floor(playlistLength) % 60 < 10 ? `0${Math.floor(playlistLength) % 60}`:`${Math.floor(playlistLength) % 60}`}`
-        }, 200);
-    }
+    plinfo.innerText = `${songsCount} songs`
     
     for (let i = 0; i < playlistshtml.length; i++) {
         /**

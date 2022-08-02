@@ -16,6 +16,10 @@ const serveradress = document.getElementById("serveradress");
 const searchStatus = document.getElementById("searchstatus");
 const metadataStatus = document.getElementById("metadatastatus");
 
+const minimiseButton = document.getElementById("minimise-button");
+const fullscreenButton = document.getElementById("fullscreen-button");
+const closeButton = document.getElementById("close-button");
+
 const ip = require("ip");
 const fs = require("fs");
 const path = require("path");
@@ -25,6 +29,18 @@ const {
 
 let savesPath = "";
 let settings = {};
+
+minimiseButton.onclick = () => {
+    ipcRenderer.send("minimise-button-settings");
+}
+
+fullscreenButton.onclick = () => {
+    ipcRenderer.send("fullscreen-button-settings");
+}
+
+closeButton.onclick = () => {
+    ipcRenderer.send("close-button-settings")
+}
 
 ipcRenderer.send("getFolder");
 

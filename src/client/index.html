@@ -22,6 +22,7 @@
         background-color: rgb(18, 17, 17);
         color: white;
         height: 100%;
+        overflow: hidden;
     }
 
     ::-webkit-scrollbar {
@@ -136,9 +137,43 @@
     .scroll-alone {
         overflow: auto;
     }
+
+    .bar {
+        -webkit-app-region: drag;
+        height: 25px;
+        width: 100%;
+        display: grid;
+        grid-template-columns: 1fr auto;
+        grid-template-rows: none;
+        background-color: rgb(25, 24, 24);
+    }
+
+    .no-drag {
+        -webkit-app-region: no-drag;
+    }
+
+    .icon {
+        width: 20px;
+        height: 20px;
+        object-fit: contain;
+        align-self: center;
+    }
 </style>
 
 <body>
+    <div class="bar bg-opacity-50">
+        <div>
+            <button class="no-drag hover:bg-gray-600 hover:bg-opacity-70 h-4 text-white text-center px-1 rounded-sm text-sm" id="file-button">File</button>
+            <button class="no-drag hover:bg-gray-600 hover:bg-opacity-70 h-4 text-white text-center px-1 rounded-sm text-sm" id="lyrics-button">Lyrics</button>
+            <button class="no-drag hover:bg-gray-600 hover:bg-opacity-70 h-4 text-white text-center px-1 rounded-sm text-sm" id="settings-button">Settings</button>
+            <button class="no-drag hover:bg-gray-600 hover:bg-opacity-70 h-4 text-white text-center px-1 rounded-sm text-sm" id="info-button">Info</button>
+        </div>
+        <div>
+            <button class="no-drag hover:bg-gray-600 bg-opacity-75 w-5 h-4 px-1" id="minimise-button"><img class="icon" src="../assets/minimise.png"></button>
+            <button class="no-drag hover:bg-gray-600 bg-opacity-75 w-5 h-4 px-1" id="fullscreen-button"><img class="icon" src="../assets/maximise.png"></button>
+            <button class="no-drag hover:bg-red-600 bg-opacity-75 w-5 h-4 px-1" id="close-button"><img class="icon" src="../assets/cross.png"></button>
+        </div>
+    </div>
     <div class="main">
         <!-- <h1 id="userId" class="text-3xl font-bold"></h1> -->
         <div class="left grid scroll-alone mb-[12vh]">
@@ -152,9 +187,10 @@
                     <button type="button" id="clearSearch"
                         class="px-1 bg-white border-white text-gray-700 hover:text-gray-400 rounded-r-full">clear</button>
                 </form>
-                <div class="grid" style="grid-template-columns: 1fr auto;">
+                <div class="grid" style="grid-template-columns: 1fr auto auto;">
                     <h1 id="currentplaylist" class="text-2xl font-semibold">Album songs</h1>
                     <p id="plinfo" class="text-gray-600 font-normal">0 songs</p>
+                    <p id="pltime" class="text-gray-600 font-normal">, 00:00:00</p>
                 </div>
                 <br>
             </div>
@@ -182,8 +218,8 @@
                 Loop off
             </button>
             <input type="checkbox" id="shuffle" />
-                <label for="shuffle">Shuffle</label>
-            </div>
+            <label for="shuffle">Shuffle</label>
+        </div>
 
         <div>
             <button id="prev"
@@ -198,13 +234,13 @@
 
         <div>
             <input type="range" step="0.01" value="0" max="100" id="timeline" class="timeline">
-                <label id="time" for="timeline">00:00</label>
-            </div>
+            <label id="time" for="timeline">00:00/00:00</label>
+        </div>
 
-            <div>
-                <input type="range" min="1" max="100" id="volume" class="volume">
-                <button id="davolume"></button>
-            </div>
+        <div>
+            <input type="range" min="1" max="100" id="volume" class="volume">
+            <button id="davolume"></button>
+        </div>
     </div>
 
     <audio id="player" class="player">This browser doesn't support le pler</audio>

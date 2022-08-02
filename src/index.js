@@ -54,7 +54,9 @@ const createWindow = () => {
 	// Create the browser window.
 	mainWindow = new BrowserWindow({
 		width: 1280,
-		height: 720,
+		height: 685,
+		frame: false,
+		autoHideMenuBar: true,
 		webPreferences: {
 			nodeIntegration: true,
 			nodeIntegrationInWorker: true,
@@ -247,6 +249,7 @@ app.on('ready', () => {
 							addWindow = new BrowserWindow({
 								width: 800,
 								height: 600,
+								frame: false,
 								webPreferences: {
 									nodeIntegration: true,
 									contextIsolation: false
@@ -266,6 +269,8 @@ app.on('ready', () => {
 								addWindow.destroy();
 								addWindow = null;
 							});
+						}else{
+							addWindow.focus();
 						}
 					}
 				},
@@ -278,53 +283,35 @@ app.on('ready', () => {
 			]
 		},
 		{
-			label: "Song",
-			submenu: [{
-					label: "Lyrics",
-					click: () => {
-						if (!lyricsWindow) {
-							lyricsWindow = new BrowserWindow({
-								width: 400,
-								height: 720,
-								webPreferences: {
-									nodeIntegration: true,
-									contextIsolation: false
-								}
-							});
-
-							if (!app.isPackaged) {
-								lyricsWindow.webContents.openDevTools();
-							}
-							lyricsWindow.loadFile(path.join(__dirname, "client/lyrics.html"));
-							lyricsWindow.setMenu(null);
-							lyricsWindow.setIcon(iconpath);
-
-							lyricsWindow.on("closed", () => {
-								lyricsWindow.destroy();
-								lyricsWindow = null;
-							});
+			label: "Lyrics",
+			click: () => {
+				if (!lyricsWindow) {
+					lyricsWindow = new BrowserWindow({
+						width: 400,
+						height: 720,
+						frame: false,
+						webPreferences: {
+							nodeIntegration: true,
+							contextIsolation: false
 						}
+					});
+
+					if (!app.isPackaged) {
+						lyricsWindow.webContents.openDevTools();
 					}
-				},
-				{
-					label: "Next Song",
-					click: function () {
-						mainWindow.webContents.send("next");
-					}
-				},
-				{
-					label: "Previous Song",
-					click: function () {
-						mainWindow.webContents.send("prev");
-					}
-				},
-				{
-					label: "Pause/Play",
-					click: function () {
-						mainWindow.webContents.send("pause");
-					}
+
+					lyricsWindow.loadFile(path.join(__dirname, "client/lyrics.html"));
+					lyricsWindow.setMenu(null);
+					lyricsWindow.setIcon(iconpath);
+
+					lyricsWindow.on("closed", () => {
+						lyricsWindow.destroy();
+						lyricsWindow = null;
+					});
+				}else{
+					lyricsWindow.focus();
 				}
-			]
+			}
 		},
 		{
 			label: "settings",
@@ -333,6 +320,7 @@ app.on('ready', () => {
 					settingsWindow = new BrowserWindow({
 						width: 800,
 						height: 600,
+						frame: false,
 						webPreferences: {
 							nodeIntegration: true,
 							contextIsolation: false
@@ -372,6 +360,8 @@ app.on('ready', () => {
 							})
 						}
 					});
+				}else{
+					settingsWindow.focus();
 				}
 			},
 		},
@@ -444,26 +434,22 @@ app.on('ready', () => {
 				}
 			},
 			{
-				label: 'Music Control',
-				submenu: [{
-						label: "Next Song",
-						click: function () {
-							mainWindow.webContents.send("next");
-						}
-					},
-					{
-						label: "Previous Song",
-						click: function () {
-							mainWindow.webContents.send("prev");
-						}
-					},
-					{
-						label: "Pause/Play",
-						click: function () {
-							mainWindow.webContents.send("pause");
-						}
-					}
-				]
+				label: "Pause/Play",
+					click: function () {
+					mainWindow.webContents.send("pause");
+				}
+			},
+			{
+				label: "Next Song",
+				click: function () {
+					mainWindow.webContents.send("next");
+				}
+			},
+			{
+				label: "Previous Song",
+				click: function () {
+					mainWindow.webContents.send("prev");
+				}
 			},
 			{
 				label: 'Quit',
@@ -517,6 +503,82 @@ app.on('activate', () => {
 	}
 });
 
+ipcMain.on("file-button", () => {
+	Menu.getApplicationMenu().items[0].submenu.popup();
+})
+
+ipcMain.on("lyrics-button", () => {
+	Menu.getApplicationMenu().items[1].click();
+})
+
+ipcMain.on("settings-button", () => {
+	Menu.getApplicationMenu().items[2].click();
+})
+
+ipcMain.on("info-button", () => {
+	Menu.getApplicationMenu().items[3].submenu.popup();
+})
+
+ipcMain.on("minimise-button", (event) => {
+	mainWindow.minimize();
+})
+
+ipcMain.on("fullscreen-button", () => {
+	mainWindow.isMaximized() ? mainWindow.restore() : mainWindow.maximize();
+})
+
+ipcMain.on("close-button", () => {
+	mainWindow.close();
+})
+
+ipcMain.on("minimise-button-add", (event) => {
+	addWindow.minimize();
+})
+
+ipcMain.on("fullscreen-button-add", () => {
+	addWindow.isMaximized() ? addWindow.restore() : addWindow.maximize();
+})
+
+ipcMain.on("close-button-add", () => {
+	addWindow.close();
+})
+
+ipcMain.on("minimise-button-lyrics", (event) => {
+	lyricsWindow.minimize();
+})
+
+ipcMain.on("fullscreen-button-lyrics", () => {
+	lyricsWindow.isMaximized() ? lyricsWindow.restore() : lyricsWindow.maximize();
+})
+
+ipcMain.on("close-button-lyrics", () => {
+	lyricsWindow.close();
+})
+
+ipcMain.on("minimise-button-settings", (event) => {
+	settingsWindow.minimize();
+})
+
+ipcMain.on("fullscreen-button-settings", () => {
+	settingsWindow.isMaximized() ? settingsWindow.restore() : settingsWindow.maximize();
+})
+
+ipcMain.on("close-button-settings", () => {
+	settingsWindow.close();
+})
+
+ipcMain.on("minimise-button-rename", (event) => {
+	renameWindow.minimize();
+})
+
+ipcMain.on("fullscreen-button-rename", () => {
+	renameWindow.isMaximized() ? renameWindow.restore() : renameWindow.maximize();
+})
+
+ipcMain.on("close-button-rename", () => {
+	renameWindow.close();
+})
+
 ipcMain.on("makeSongMenu", (event, arg) => {
 	const template = [{
 			label: "Play",
@@ -534,6 +596,7 @@ ipcMain.on("makeSongMenu", (event, arg) => {
 					renameWindow = new BrowserWindow({
 						width: 600,
 						height: 77,
+						frame: false,
 						webPreferences: {
 							nodeIntegration: true,
 							contextIsolation: false
@@ -635,6 +698,7 @@ ipcMain.on("makePlaylistMenu", (event, arg) => {
 					renameWindow = new BrowserWindow({
 						width: 600,
 						height: 77,
+						frame: false,
 						webPreferences: {
 							nodeIntegration: true,
 							contextIsolation: false

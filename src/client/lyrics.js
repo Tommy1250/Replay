@@ -3,6 +3,10 @@ const lyricsHTML = document.getElementById("lyrics");
 const savebtn = document.getElementById("savebtn");
 const form = document.getElementById("form");
 
+const minimiseButton = document.getElementById("minimise-button");
+const fullscreenButton = document.getElementById("fullscreen-button");
+const closeButton = document.getElementById("close-button");
+
 const fs = require("fs");
 const path = require("path");
 
@@ -33,6 +37,18 @@ let savesPath = "";
 ipcRenderer.on("savesFolder", (event, data) => {
     savesPath = data;
 });
+
+minimiseButton.onclick = () => {
+    ipcRenderer.send("minimise-button-lyrics");
+}
+
+fullscreenButton.onclick = () => {
+    ipcRenderer.send("fullscreen-button-lyrics");
+}
+
+closeButton.onclick = () => {
+    ipcRenderer.send("close-button-lyrics")
+}
 
 savebtn.onclick = () => {
     savelyrics();

@@ -6,6 +6,10 @@ const path = require("path");
 const form = document.getElementById("form");
 const songname = document.getElementById("name");
 
+const minimiseButton = document.getElementById("minimise-button");
+const fullscreenButton = document.getElementById("fullscreen-button");
+const closeButton = document.getElementById("close-button");
+
 const info = {
     songName: "",
     playlistName: "",
@@ -14,7 +18,17 @@ const info = {
     playlist: false
 }
 
+minimiseButton.onclick = () => {
+    ipcRenderer.send("minimise-button-rename");
+}
 
+fullscreenButton.onclick = () => {
+    ipcRenderer.send("fullscreen-button-rename");
+}
+
+closeButton.onclick = () => {
+    ipcRenderer.send("close-button-rename")
+}
 
 ipcRenderer.on("info", (event, data) => {
     if(data.playlist){
