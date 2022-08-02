@@ -4,7 +4,7 @@ it's a music app with some noteable features
 like: 
 
 1. a control server to control the playback from any device
-2. auto update
+2. update notifications
 3. support for mp3, m4a, ogg, wav and flac files
 4. ease of use
 
