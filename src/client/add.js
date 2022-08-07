@@ -7,6 +7,8 @@ const minimiseButton = document.getElementById("minimise-button");
 const fullscreenButton = document.getElementById("fullscreen-button");
 const closeButton = document.getElementById("close-button");
 
+const report = document.getElementById("report");
+
 const {
     ipcRenderer
 } = require('electron');
@@ -91,6 +93,10 @@ ipcRenderer.on("savesFolder", (event, data) => {
     });*/
 });
 
+let toDownload = 0;
+let downloaded = 0;
+let errored = 0;
+
 /**
  * 
  * @param {string} url 
@@ -119,7 +125,8 @@ async function download(url) {
                 status.innerText = `an error happened\n${error}\n`;
             }
         }
-
+        toDownload += videos.length;
+        report.innerText = `Done: ${downloaded}, Error: ${errored}, Total: ${downloaded + errored}, of: ${toDownload}`;
     } else if (ytdl.validateURL(url)) {
         const video = await ytdl.getInfo(url);
 
@@ -127,7 +134,8 @@ async function download(url) {
             url: video.videoDetails.video_url,
             title: video.videoDetails.title
         })
-
+        toDownload += 1;
+        report.innerText = `Done: ${downloaded}, Error: ${errored}, Total: ${downloaded + errored}, of: ${toDownload}`;
     } else {
         const videos = await videoFinder(url);
         list.innerHTML = "";
@@ -144,15 +152,15 @@ async function download(url) {
             let br2 = document.createElement("br");
 
             btn.innerText = "Download";
-            btn.id = `${i}`;
+            btn.id = `${i}download`;
             btn.className = "px-3 py-[0.7] text-sm text-blue-600 font-semibold rounded-full border border-blue-200 hover:text-white hover:bg-blue-600 hover:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2"
             
             btn2.innerText = "Stream";
-            btn2.id = `${i}`;
+            btn2.id = `${i}stream`;
             btn2.className = "px-3 py-[0.7] text-sm text-blue-600 font-semibold rounded-full border border-blue-200 hover:text-white hover:bg-blue-600 hover:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2"
 
             name.innerText = `[${video.timestamp}]${video.title}`;
-            name.htmlFor = i;
+            name.htmlFor = `${i}download`;
             name.style.cursor = "pointer";
 
             img.src = video.thumbnail;
@@ -165,6 +173,8 @@ async function download(url) {
                     url: video.url,
                     title: video.title
                 })
+                toDownload += 1;
+                report.innerText = `Done: ${downloaded}, Error: ${errored}, Total: ${downloaded + errored}, of: ${toDownload}`;
             }
 
             img.loading = "lazy";
@@ -175,6 +185,8 @@ async function download(url) {
                     url: video.url,
                     title: video.title
                 })
+                toDownload += 1;
+                report.innerText = `Done: ${downloaded}, Error: ${errored}, Total: ${downloaded + errored}, of: ${toDownload}`;
             }
 
             btn2.onclick = () => {
@@ -194,7 +206,6 @@ async function download(url) {
 
             list.appendChild(li);
         }
-        
     }
 }
 
@@ -255,7 +266,20 @@ async function downloadAudio({
                     console.log("Download Completed");
                     if(settings["search"].status)
                         searchLyrics(title, fs.readFileSync(path.join(savesPath, "lyrics.txt"), "utf-8"));
+
+                    downloaded++;
+                    if((downloaded + errored) === toDownload) 
+                        status.innerText += `Download complete.\nDownloaded: ${downloaded} out of ${toDownload}\nErrors: ${errored}\n`;
+
+                    report.innerText = `Done: ${downloaded}, Error: ${errored}, Total: ${downloaded + errored}, of: ${toDownload}`;
                 });
+            }).on("error", (err) => {
+                status.innerText += err;
+                errored++;
+                if((downloaded + errored) === toDownload) 
+                    status.innerText += `Download complete.\nDownloaded: ${downloaded} out of ${toDownload}\nErrors: ${errored}\n`;
+
+                report.innerText = `Done: ${downloaded}, Error: ${errored}, Total: ${downloaded + errored}, of: ${toDownload}`;
             });
     
             return;
@@ -283,12 +307,24 @@ async function downloadAudio({
                             console.log(`${title} was deleted successfully and replaced with the mp3 file`);
                             if(settings["search"].status)
                                 searchLyrics(title, fs.readFileSync(path.join(savesPath, "lyrics.txt"), "utf-8"));
+
+                            downloaded++;
+                            if((downloaded + errored) === toDownload) 
+                                status.innerText += `Download complete.\nDownloaded: ${downloaded} out of ${toDownload}\nErrors: ${errored}\n`;
+
+                            report.innerText = `Done: ${downloaded}, Error: ${errored}, Total: ${downloaded + errored}, of: ${toDownload}`;
                         })
                     })
                 })
                 .on("error", (err) => {
                     console.error(`there was an error while downloading ${title}\n${err}`)
                     status.innerText += `\nthere was an error while downloading ${title}\n${err}\n`
+
+                    errored++;
+                    if((downloaded + errored) === toDownload)
+                        status.innerText += `Download complete.\nDownloaded: ${downloaded} out of ${toDownload}\nErrors: ${errored}\n`;
+
+                    report.innerText = `Done: ${downloaded}, Error: ${errored}, Total: ${downloaded + errored}, of: ${toDownload}`;
                 })
             );
         }

@@ -30,6 +30,7 @@ module.exports = (savesPath) => {
                         shell.openExternal("https://github.com/Tommy1250/Replay/releases/latest");
                         app.exit();
                     } else if (returnValue.response === 1) {
+                        let settings = JSON.parse(fs.readFileSync(path.join(savesPath, "settings.json"), "utf-8"));
                         settings["update"].status = "0";
                         fs.writeFile(path.join(savesPath, 'settings.json'), JSON.stringify(settings), (err) => {
                             if (err) console.error(err);
