@@ -10,6 +10,7 @@
     <!-- <script src="./socket.io/socket.io.js"></script> -->
     <script src="script.js" defer type="module"></script>
     <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="scrollbar.css">
 </head>
 <style>
     *{
@@ -23,29 +24,6 @@
         color: white;
         height: 100%;
         overflow: hidden;
-    }
-
-    ::-webkit-scrollbar {
-        width: 5px;
-    }
-
-    /* Track */
-    ::-webkit-scrollbar-track {
-        background: #292929; 
-    }
-
-    ::-webkit-scrollbar-track-piece {
-        background: #292929;
-    }
-        
-    /* Handle */
-    ::-webkit-scrollbar-thumb {
-        background: #888; 
-    }
-
-    /* Handle on hover */
-    ::-webkit-scrollbar-thumb:hover {
-        background: #555; 
     }
 
     .main {
@@ -190,7 +168,7 @@
                 <div class="grid" style="grid-template-columns: 1fr auto auto;">
                     <h1 id="currentplaylist" class="text-2xl font-semibold">Album songs</h1>
                     <p id="plinfo" class="text-gray-600 font-normal">0 songs</p>
-                    <p id="pltime" class="text-gray-600 font-normal">, 00:00:00</p>
+                    <p id="pltime" class="text-gray-600 font-normal"></p>
                 </div>
                 <br>
             </div>
