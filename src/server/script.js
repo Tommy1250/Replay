@@ -199,6 +199,18 @@ socket.on("change", data => {
     updatePlayer("change", data);
 })
 
+socket.on("mute", data => {
+    mutebtn.innerText = data ? "UnMute" : "Mute";
+})
+
+socket.on("play", () => {
+    pausebtn.innerText = "Pause";
+})
+
+socket.on("pause", () => {
+    pausebtn.innerText = "Play";
+})
+
 /**
  * 
  * @param {{folders: string[], playlists: {string: string[]}}} lesongs 
@@ -220,6 +232,8 @@ function setupPlayer(lesongs) {
         handleLoop(cb.loop);
 
         shufflebtn.innerText = cb.shuffle ? "Shuffle on" : "Shuffle off";
+        mutebtn.innerText = cb.mute ? "UnMute" : "Mute";
+        pausebtn.innerText = cb.play ? "Pause" : "Play";
     })
 
     playerDone = true;

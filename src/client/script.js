@@ -418,8 +418,10 @@ ipcRenderer.on("lyrics", (event, arg) => {
 player.onvolumechange = () => {
     if (player.muted) {
         volumeValue.innerText = "Unmute";
+        ipcRenderer.send("mute", true);
     } else {
         volumeValue.innerText = `${Math.round(player.volume * 100)}%`;
+        ipcRenderer.send("mute", false);
     }
 }
 

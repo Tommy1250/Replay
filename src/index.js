@@ -898,10 +898,12 @@ ipcMain.on("change", (event, arg) => {
 });
 
 ipcMain.on("play", (event, arg) => {
+	playing = true;
 	changeActivity(arg.name, arg.playlist);
 });
 
 ipcMain.on("pause", (event, arg) => {
+	playing = false;
 	stopActivity()
 });
 
@@ -927,6 +929,8 @@ if (settings["server"].enabled === "1") {
 	} = require("socket.io");
 
 	const io = new Server(server);
+	let muted = false;
+	let playing = false;
 
 	appExpress.get("/", (req, res) => {
 		res.sendFile(path.join(__dirname, "server/index.html"));
@@ -975,6 +979,21 @@ if (settings["server"].enabled === "1") {
 		io.sockets.emit("volumeChange", arg)
 	})
 
+	ipcMain.on("mute", (event, arg) => {
+		muted = arg;
+		io.sockets.emit("mute", arg);
+	})
+
+	ipcMain.on("play", (event, arg) => {
+		playing = true;
+		io.sockets.emit("play");
+	});
+	
+	ipcMain.on("pause", (event, arg) => {
+		playing = false;
+		io.sockets.emit("pause");
+	});
+
 	io.on("connection", socket => {
 		console.log(`${socket.id} just connected`)
 
@@ -997,7 +1016,9 @@ if (settings["server"].enabled === "1") {
 			cb({
 				song: serverSong,
 				loop: JSON.parse(fs.readFileSync(path.join(savesPath, "settings.json"), "utf-8"))["loop"].status,
-				shuffle: JSON.parse(fs.readFileSync(path.join(savesPath, "settings.json"), "utf-8"))["shuffle"].status
+				shuffle: JSON.parse(fs.readFileSync(path.join(savesPath, "settings.json"), "utf-8"))["shuffle"].status,
+				mute: muted,
+				play: playing
 			});
 		})
 
@@ -1023,7 +1044,7 @@ if (settings["server"].enabled === "1") {
 
 		socket.on("pause", () => {
 			mainWindow.webContents.send("pause");
-			console.log(`${socket.id} toggled pause the song`);
+			console.log(`${socket.id} toggled play the song`);
 		})
 
 		socket.on("volume", (volume) => {
