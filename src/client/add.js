@@ -111,7 +111,8 @@ async function download(url) {
 
         await fs.mkdirSync(`${musicFolder}/${changeName(playlist.title)}`);
         let index = 0
-
+        toDownload += videos.length;
+        
         for (const video of videos) {
             let video2
             try {
@@ -124,8 +125,7 @@ async function download(url) {
                 console.warn(`an error happened\n${error}`);
                 status.innerText = `an error happened\n${error}\n`;
             }
-        }
-        toDownload += videos.length;
+        } 
         report.innerText = `Done: ${downloaded}, Error: ${errored}, Total: ${downloaded + errored}, of: ${toDownload}`;
     } else if (ytdl.validateURL(url)) {
         const video = await ytdl.getInfo(url);
