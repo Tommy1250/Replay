@@ -276,7 +276,7 @@ function getplaylist(plname) {
             });
         }
         btn.id = "removable";
-        btn.className = "px-4 py-1 text-sm text-purple-600 font-semibold rounded-full border border-purple-200 hover:text-white hover:bg-purple-600 hover:border-transparent focus:outline-none focus:ring-2 focus:ring-purple-600 focus:ring-offset-2"
+        btn.className = "px-4 py-1 text-sm text-white font-semibold rounded-full border border-white hover:bg-white hover:bg-opacity-40 focus:outline-none focus:ring-2 focus:ring-white focus:ring-opacity-40"
         htmlsongs.appendChild(btn);
 
         //make a br element
@@ -355,7 +355,7 @@ search.oninput = () => {
                         });
                     }
                     btn.id = "removable";
-                    btn.className = "px-4 py-1 text-sm text-purple-600 font-semibold rounded-full border border-purple-200 hover:text-white hover:bg-purple-600 hover:border-transparent focus:outline-none focus:ring-2 focus:ring-purple-600 focus:ring-offset-2"
+                    btn.className = "px-4 py-1 text-sm text-white font-semibold rounded-full border border-white hover:bg-white hover:bg-opacity-40 focus:outline-none focus:ring-2 focus:ring-white focus:ring-opacity-40"
                     htmlsongs.appendChild(btn);
             
                     //make a br element
@@ -423,7 +423,7 @@ function makegallery(lesongs) {
         const btn = document.createElement("button");
         btn.textContent = element;
         btn.onclick = () => getplaylist(element);
-        btn.className = "px-4 py-1 text-sm text-purple-600 font-semibold rounded-full border border-purple-200 hover:text-white hover:bg-purple-600 hover:border-transparent focus:outline-none focus:ring-2 focus:ring-purple-600 focus:ring-offset-2"
+        btn.className = "px-4 py-1 text-sm text-white font-semibold rounded-full border border-white hover:bg-white hover:bg-opacity-40 focus:outline-none focus:ring-2 focus:ring-white focus:ring-opacity-40"
 
         playlist.appendChild(btn);
 

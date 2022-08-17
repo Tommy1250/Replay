@@ -10,7 +10,8 @@ const closeButton = document.getElementById("close-button");
 const report = document.getElementById("report");
 
 const {
-    ipcRenderer
+    ipcRenderer,
+    shell
 } = require('electron');
 
 const http = require('http');
@@ -77,6 +78,7 @@ function downloadSong() {
 let savesPath = "";
 let musicFolder = "";
 let settings = {};
+let pathConfig = "random";
 
 ipcRenderer.send("getFolder");
 
@@ -124,6 +126,7 @@ async function download(url) {
             } catch (error) {
                 console.warn(`an error happened\n${error}`);
                 status.innerText = `an error happened\n${error}\n`;
+                errored++;
             }
         } 
         report.innerText = `Done: ${downloaded}, Error: ${errored}, Total: ${downloaded + errored}, of: ${toDownload}`;
@@ -146,6 +149,7 @@ async function download(url) {
             let li = document.createElement("li");
             let btn = document.createElement("button");
             let btn2 = document.createElement("button");
+            let btn3 = document.createElement("button");
             let name = document.createElement("label");
             let br = document.createElement("br");
             let img = document.createElement("img");
@@ -158,6 +162,14 @@ async function download(url) {
             btn2.innerText = "Stream";
             btn2.id = `${i}stream`;
             btn2.className = "px-3 py-[0.7] text-sm text-blue-600 font-semibold rounded-full border border-blue-200 hover:text-white hover:bg-blue-600 hover:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2"
+
+            btn3.innerText = "Open";
+            btn3.id = `${i}open`;
+            btn3.style.visibility = "hidden";
+
+            btn3.onclick = () => {
+                shell.openExternal(video.url);
+            }
 
             name.innerText = `[${video.timestamp}]${video.title}`;
             name.htmlFor = `${i}download`;
@@ -189,6 +201,18 @@ async function download(url) {
                 report.innerText = `Done: ${downloaded}, Error: ${errored}, Total: ${downloaded + errored}, of: ${toDownload}`;
             }
 
+            btn.oncontextmenu = () => {
+                ipcRenderer.send("context-downloader", i);
+            }
+
+            img.oncontextmenu = () => {
+                ipcRenderer.send("context-downloader", i);
+            }
+
+            name.oncontextmenu = () => {
+                ipcRenderer.send("context-downloader", i);
+            }
+
             btn2.onclick = () => {
                 ipcRenderer.send("stream", {
                     url: `http://195.201.26.179:5050/stream?url=${video.url}`,
@@ -200,6 +224,7 @@ async function download(url) {
             li.appendChild(name);
             li.appendChild(btn);
             li.appendChild(btn2);
+            li.appendChild(btn3);
             li.appendChild(br2);
             li.appendChild(img);
             li.appendChild(br);
@@ -209,6 +234,24 @@ async function download(url) {
     }
 }
 
+
+ipcRenderer.on("download", (event, args) => {
+    document.getElementById(`${args}download`).click();
+})
+
+ipcRenderer.on("stream", (event, args) => {
+    document.getElementById(`${args}stream`).click();
+})
+
+ipcRenderer.on("download-to", (event, args) => {
+    console.log(args);
+    pathConfig = args.path
+    document.getElementById(`${args.number}download`).click();
+})
+
+ipcRenderer.on("open-link", (event, args) => {
+    document.getElementById(`${args}open`).click();
+})
 
 /**
  * @param {string} realname 
@@ -234,8 +277,17 @@ async function downloadAudio({
     url,
     title
 }, playlist = false, plname = null) {
-    let thepath = playlist ? `${musicFolder}/${plname}/${changeName(title)}.mp4` : `${musicFolder}/${changeName(title)}.mp4`;
-    let path2 = playlist ? `${musicFolder}/${plname}/${changeName(title)}.mp3` : `${musicFolder}/${changeName(title)}.mp3`;
+    let thepath = "";
+    let path2 = "";
+    if(pathConfig === "random"){
+        thepath = playlist ? path.join(musicFolder, plname, `${changeName(title)}.mp4`) : path.join(musicFolder, `${changeName(title)}.mp4`);
+        path2 = playlist ? path.join(musicFolder, plname, `${changeName(title)}.mp3`) : path.join(musicFolder, `${changeName(title)}.mp3`);
+    }else{
+        thepath = playlist ? path.join(musicFolder, plname, `${changeName(title)}.mp4`) : path.join(musicFolder, pathConfig, `${changeName(title)}.mp4`);
+        path2 = playlist ? path.join(musicFolder, plname, `${changeName(title)}.mp3`) : path.join(musicFolder, pathConfig, `${changeName(title)}.mp3`);
+    }
+    
+    if(!playlist) status.innerText += `Downloading to ${pathConfig}...\n`;
 
     exec("ffmpeg -version", async(error, stdout, stderr) => {
         console.log("Tring to get ffmpeg")

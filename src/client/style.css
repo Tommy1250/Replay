@@ -516,14 +516,6 @@ Ensure the default browser behavior of the `hidden` attribute.
   margin-bottom: 12vh;
 }
 
-.mb-\[155px\] {
-  margin-bottom: 155px;
-}
-
-.mb-\[120px\] {
-  margin-bottom: 120px;
-}
-
 .mb-\[80px\] {
   margin-bottom: 80px;
 }
@@ -546,10 +538,6 @@ Ensure the default browser behavior of the `hidden` attribute.
 
 .h-\[75px\] {
   height: 75px;
-}
-
-.max-h-\[150px\] {
-  max-height: 150px;
 }
 
 .w-5 {
@@ -676,6 +664,10 @@ Ensure the default browser behavior of the `hidden` attribute.
 
 .p-\[0\.4rem\] {
   padding: 0.4rem;
+}
+
+.p-2 {
+  padding: 12px;
 }
 
 .px-3 {
@@ -890,6 +882,10 @@ Ensure the default browser behavior of the `hidden` attribute.
   --tw-bg-opacity: 0.2;
 }
 
+.hover\:bg-opacity-40:hover {
+  --tw-bg-opacity: 0.4;
+}
+
 .hover\:text-white:hover {
   --tw-text-opacity: 1;
   color: rgb(255 255 255 / var(--tw-text-opacity));
@@ -940,6 +936,19 @@ Ensure the default browser behavior of the `hidden` attribute.
   --tw-ring-color: rgb(220 38 38 / var(--tw-ring-opacity));
 }
 
+.focus\:ring-white:focus {
+  --tw-ring-opacity: 1;
+  --tw-ring-color: rgb(255 255 255 / var(--tw-ring-opacity));
+}
+
+.focus\:ring-opacity-40:focus {
+  --tw-ring-opacity: 0.4;
+}
+
 .focus\:ring-offset-2:focus {
   --tw-ring-offset-width: 2px;
+}
+
+.focus\:ring-offset-1:focus {
+  --tw-ring-offset-width: 1px;
 }

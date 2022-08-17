@@ -718,6 +718,8 @@ function getplaylist(plname) {
     //playlist.style.visibility = "hidden";
     //htmlsongs.style.visibility = "visible";
 
+    search.value = "";
+
     removePlaylist();
 
     let playlistLength = 0;
@@ -848,6 +850,8 @@ function makegallery() {
 
             btn.className = "py-[2px] text-left font-medium text-sm text-gray-500 hover:text-white focus:text-gray-300"
 
+            if(element === latestPlaylist) btn.classList.add("clicked");
+            
             playlist.appendChild(btn);
 
             const br = document.createElement("br");
@@ -859,8 +863,10 @@ function makegallery() {
 
         if (currentPlaylist.innerText === "Album songs") {
             getplaylist(JSON.parse(fs.readFileSync(path.join(savesPath, "latest.json"), "utf-8")).playlist);
-        } else {
-            getplaylist(currentPlaylist.innerText);
+        } else if(currentPlaylist.innerText === "Search results"){
+            searchPlaylist(search.value);
+        }else{
+            getplaylist(latestPlaylist);
         }
 
         if (!galleryDone) {

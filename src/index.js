@@ -25,6 +25,10 @@ const {
 } = require("./discord")
 discordLogin();
 
+const {
+	getGallery
+} = require("./gallery");
+
 /**
  * @type {BrowserWindow}
  */
@@ -132,6 +136,11 @@ if (!gotTheLock) {
 		if (settings["update"].status === "1") {
 			require("./functions/update")(savesPath);
 		}
+
+		//app.setLoginItemSettings({
+		//	openAtLogin: settings["startup"].status,
+		//	path: app.getPath("exe")
+		//})
 
 		const menuTemplate = [{
 				label: 'File',
@@ -604,6 +613,14 @@ ipcMain.on("makeSongMenu", (event, arg) => {
 			}
 		},
 		{
+			label: "Move to ...",
+			submenu: []
+		},
+		{
+			label: "Copy to ...",
+			submenu: []
+		},
+		{
 			label: "Delete",
 			click: () => {
 				const dialogOpts = {
@@ -623,19 +640,60 @@ ipcMain.on("makeSongMenu", (event, arg) => {
 		}
 	]
 
-	if (arg.addShow) {
-		template.splice(2, 0, {
-			label: "Show in Playlist",
-			click: () => {
-				mainWindow.webContents.send("showSong", {
-					playlist: arg.playlist,
-					number: arg.number
+	const musicFolder = fs.readFileSync(path.join(savesPath, "folder.txt"), "utf-8")
+
+	getGallery(musicFolder).then(gallery => {
+		const songPath = arg.playlist === "random" ? path.join(musicFolder, arg.name) : path.join(musicFolder, arg.playlist, arg.name);
+
+		for (let i = 0; i < gallery.folders.length; i++) {
+			const folder = gallery.folders[i];
+			if(folder !== arg.playlist){
+				template[2].submenu.push({
+					label: folder,
+					click: () => {
+						if(folder === "random"){
+							fs.copyFileSync(songPath, path.join(musicFolder, arg.name));
+						}else{
+							fs.copyFileSync(songPath, path.join(musicFolder, folder, arg.name));
+						}
+
+						fs.rmSync(songPath, {
+							recursive: true
+						});
+
+						mainWindow.webContents.send("refresh");
+					}
+				})
+
+				template[3].submenu.push({
+					label: folder,
+					click: () => {
+						if(folder === "random"){
+							fs.copyFileSync(songPath, path.join(musicFolder, arg.name));
+						}else{
+							fs.copyFileSync(songPath, path.join(musicFolder, folder, arg.name));
+						}
+
+						mainWindow.webContents.send("refresh");
+					}
 				})
 			}
-		})
-	}
-	const menu = Menu.buildFromTemplate(template);
-	menu.popup();
+		}
+
+		if (arg.addShow) {
+			template.splice(4, 0, {
+				label: "Show in Playlist",
+				click: () => {
+					mainWindow.webContents.send("showSong", {
+						playlist: arg.playlist,
+						number: arg.number
+					})
+				}
+			})
+		}
+
+		Menu.buildFromTemplate(template).popup();
+	})
 });
 
 ipcMain.on("makePlaylistMenu", (event, arg) => {
@@ -726,6 +784,45 @@ ipcMain.on("makePlaylistMenu", (event, arg) => {
 
 	const menu = Menu.buildFromTemplate(template);
 	menu.popup();
+})
+
+ipcMain.on("context-downloader", (event, songNumber) => {
+	const template = [{
+		label: "Download",
+		click: () => {
+			addWindow.webContents.send("download", songNumber);
+		}
+	},
+	{
+		label: "Download To ...",
+		submenu: []
+	},
+	{
+		label: "Open link",
+		click: () => {
+			addWindow.webContents.send("open-link", songNumber);
+		}
+	},
+	{
+		label: "Stream",
+		click: () => {
+			addWindow.webContents.send("stream", songNumber);
+		}
+	}]
+
+	getGallery(fs.readFileSync(path.join(savesPath, "folder.txt"), "utf-8")).then(gallery => {
+		for (let i = 0; i < gallery.folders.length; i++) {
+			const folder = gallery.folders[i];
+			template[1].submenu.push({
+				label: folder,
+				click: () => {
+					addWindow.webContents.send("download-to", {path: folder, number: songNumber});
+				}
+			})
+		}
+		Menu.buildFromTemplate(template).popup();
+	})
+
 })
 
 ipcMain.on("stream", (event, arg) => {
@@ -912,10 +1009,6 @@ ipcMain.on("pause", (event, arg) => {
 if (settings["server"].enabled === "1") {
 	const express = require("express");
 	const appExpress = express();
-
-	const {
-		getGallery
-	} = require("./gallery");
 
 	appExpress.use(express.json());
 	appExpress.use(express.urlencoded({
