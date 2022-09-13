@@ -101,10 +101,14 @@ ipcRenderer.on("savesFolder", (event, data) => {
     if (folder !== "") {
         if (fs.existsSync(folder)) makegallery();
     } else {
-        nowplaying.innerText = "No folder selected!\nPlease select a folder in the file menu.";
+        nowplaying.innerText = "No folder selected! Please select a folder in the file menu.";
     }
     console.log(fs.readdirSync(savesPath));
 });
+
+ipcRenderer.on("settingsChanged", (event, data) => {
+    settings = data
+})
 
 ipcRenderer.on("refresh", () => {
     makegallery();
@@ -121,7 +125,14 @@ ipcRenderer.on("pause", () => {
 ipcRenderer.on("folder", (event, arg) => {
     folder = arg;
     fs.writeFileSync(path.join(savesPath, "folder.txt"), folder);
+    current = {
+        number: 0,
+        playlist: path.parse(folder).base
+    }
     makegallery();
+    setTimeout(() => {
+        getplaylist(path.parse(folder).base)
+    }, 1000);
 });
 
 ipcRenderer.on("lyricsFolder", (event, arg) => {
@@ -365,7 +376,7 @@ function updatePlayer(event, {
                 nodes[current.number].focus();
             }
 
-            if (current.playlist === "random") {
+            if (current.playlist === path.parse(folder).base) {
                 player.src = `${folder}/${songs.playlists[current.playlist][current.number]}`
             } else {
                 player.src = `${folder}/${current.playlist}/${songs.playlists[current.playlist][current.number]}`
@@ -515,20 +526,31 @@ function searchPlaylist(searchValue){
                     const btn = document.createElement("button");
                     const songname = document.createElement("p");
                     const songDuration = document.createElement("p");
-
+                    const songPhoto = document.createElement("img");
+                    const artist = document.createElement("p");
+            
                     songname.innerText = filter(song);
+                    btn.style.gridTemplateColumns = "1fr auto";
                     btn.appendChild(songname);
 
                     if(settings["metadata"].status){
                         let songPath = ""
                 
-                        if (songsFolder === "random") {
+                        if (songsFolder === path.parse(folder).base) {
                             songPath = path.join(folder, songs.playlists[songsFolder][j]);
                         } else {
                             songPath = path.join(folder, songsFolder, songs.playlists[songsFolder][j]);
                         }
                 
                         musicMetadata.parseFile(songPath).then(data => {
+                            if(data.common.picture){
+                                songPhoto.src = `data:image/png;base64,${data.common.picture[0].data.toString("base64")}`;
+                                songPhoto.style.objectFit = "contain"
+                                songPhoto.className = "w-[35px] h-[35px] mr-1"
+                                btn.style.gridTemplateColumns = "auto 1fr auto";
+                                btn.insertBefore(songPhoto, songname);
+                            }
+
                             if(data.format.duration){
                                 if (data.format.duration > 3600) {
                                     songDuration.innerText = `${Math.floor(data.format.duration / 3600) < 10 ? `0${Math.floor(data.format.duration / 3600)}`:`${Math.floor(data.format.duration / 3600)}`}:${Math.floor(data.format.duration / 60) % 60 < 10 ? `0${Math.floor(data.format.duration / 60) % 60}`:`${Math.floor(data.format.duration / 60) % 60}`}:${Math.floor(data.format.duration) % 60 < 10 ? `0${Math.floor(data.format.duration) % 60}`:`${Math.floor(data.format.duration) % 60}`}`;
@@ -536,6 +558,12 @@ function searchPlaylist(searchValue){
                                     songDuration.innerText = `${Math.floor(data.format.duration / 60) % 60 < 10 ? `0${Math.floor(data.format.duration / 60) % 60}`:`${Math.floor(data.format.duration / 60) % 60}`}:${Math.floor(data.format.duration) % 60 < 10 ? `0${Math.floor(data.format.duration) % 60}`:`${Math.floor(data.format.duration) % 60}`}`;
                                 }
                                 btn.appendChild(songDuration);
+                            }
+
+                            if(data.common.artist){
+                                artist.innerText = data.common.artist
+                                artist.className = "text-gray-500 font-normal"
+                                songname.appendChild(artist);
                             }
                         });
                     }
@@ -559,7 +587,6 @@ function searchPlaylist(searchValue){
                     }
                     btn.id = "removable";
                     btn.className = "grid px-2 text-left py-1 w-full text-sm text-gray-300 font-medium rounded-md hover:text-white hover:bg-white hover:bg-opacity-20 hover:border-transparent focus:border"
-                    btn.style.gridTemplateColumns = "1fr auto";
                     htmlsongs.appendChild(btn);
             
                     //make a br element
@@ -731,20 +758,31 @@ function getplaylist(plname) {
         const btn = document.createElement("button");
         const songname = document.createElement("p");
         const songDuration = document.createElement("p");
+        const songPhoto = document.createElement("img");
+        const artist = document.createElement("p");
 
         songname.innerText = filter(element);
+        btn.style.gridTemplateColumns = "1fr auto";
         btn.appendChild(songname);
 
         if(settings["metadata"].status){
             let songPath = ""
 
-            if (plname === "random") {
+            if (plname === path.parse(folder).base) {
                 songPath = path.join(folder, songs.playlists[plname][i]);
             } else {
                 songPath = path.join(folder, plname, songs.playlists[plname][i]);
             }
 
             musicMetadata.parseFile(songPath).then(data => {
+                if(data.common.picture){
+                    songPhoto.src = `data:image/png;base64,${data.common.picture[0].data.toString("base64")}`;
+                    songPhoto.style.objectFit = "contain"
+                    songPhoto.className = "w-[35px] h-[35px] mr-1"
+                    btn.style.gridTemplateColumns = "auto 1fr auto";
+                    btn.insertBefore(songPhoto, songname);
+                }
+                
                 if(data.format.duration){
                     playlistLength += data.format.duration;
 
@@ -755,7 +793,14 @@ function getplaylist(plname) {
                     }
                     btn.appendChild(songDuration);
                 }
+                
                 pltime.innerText = `, ${Math.floor(playlistLength / 3600) < 10 ? `0${Math.floor(playlistLength / 3600)}`:`${Math.floor(playlistLength / 3600)}`}:${Math.floor(playlistLength / 60) % 60 < 10 ? `0${Math.floor(playlistLength / 60) % 60}`:`${Math.floor(playlistLength / 60) % 60}`}:${Math.floor(playlistLength) % 60 < 10 ? `0${Math.floor(playlistLength) % 60}`:`${Math.floor(playlistLength) % 60}`}`
+
+                if(data.common.artist){
+                    artist.innerText = data.common.artist
+                    artist.className = "text-gray-500 font-normal"
+                    songname.appendChild(artist);
+                }
             });
         }
 
@@ -778,7 +823,6 @@ function getplaylist(plname) {
         }
         btn.id = "removable";
         btn.className = "grid px-2 text-left py-1 w-full text-sm text-gray-300 font-medium rounded-md hover:text-white hover:bg-white hover:bg-opacity-20 hover:border-transparent focus:border"
-        btn.style.gridTemplateColumns = "1fr auto";
         htmlsongs.appendChild(btn);
 
         //make a br element

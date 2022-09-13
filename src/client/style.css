@@ -512,8 +512,16 @@ Ensure the default browser behavior of the `hidden` attribute.
   margin-top: 24px;
 }
 
-.mb-\[12vh\] {
-  margin-bottom: 12vh;
+.mb-\[78px\] {
+  margin-bottom: 78px;
+}
+
+.mb-\[85px\] {
+  margin-bottom: 85px;
+}
+
+.mr-1 {
+  margin-right: 8px;
 }
 
 .mb-\[80px\] {
@@ -536,6 +544,14 @@ Ensure the default browser behavior of the `hidden` attribute.
   height: 24px;
 }
 
+.h-5 {
+  height: 32px;
+}
+
+.h-\[35px\] {
+  height: 35px;
+}
+
 .h-\[75px\] {
   height: 75px;
 }
@@ -550,6 +566,10 @@ Ensure the default browser behavior of the `hidden` attribute.
 
 .w-full {
   width: 100%;
+}
+
+.w-\[35px\] {
+  width: 35px;
 }
 
 .w-2\/3 {
@@ -627,11 +647,6 @@ Ensure the default browser behavior of the `hidden` attribute.
   border-color: rgb(254 202 202 / var(--tw-border-opacity));
 }
 
-.border-purple-200 {
-  --tw-border-opacity: 1;
-  border-color: rgb(233 213 255 / var(--tw-border-opacity));
-}
-
 .bg-white {
   --tw-bg-opacity: 1;
   background-color: rgb(255 255 255 / var(--tw-bg-opacity));
@@ -662,12 +677,12 @@ Ensure the default browser behavior of the `hidden` attribute.
   padding: 5px;
 }
 
-.p-\[0\.4rem\] {
-  padding: 0.4rem;
-}
-
 .p-2 {
   padding: 12px;
+}
+
+.p-\[0\.4rem\] {
+  padding: 0.4rem;
 }
 
 .px-3 {
@@ -798,24 +813,19 @@ Ensure the default browser behavior of the `hidden` attribute.
   color: rgb(75 85 99 / var(--tw-text-opacity));
 }
 
-.text-gray-300 {
-  --tw-text-opacity: 1;
-  color: rgb(209 213 219 / var(--tw-text-opacity));
-}
-
 .text-gray-500 {
   --tw-text-opacity: 1;
   color: rgb(107 114 128 / var(--tw-text-opacity));
 }
 
+.text-gray-300 {
+  --tw-text-opacity: 1;
+  color: rgb(209 213 219 / var(--tw-text-opacity));
+}
+
 .text-red-600 {
   --tw-text-opacity: 1;
   color: rgb(220 38 38 / var(--tw-text-opacity));
-}
-
-.text-purple-600 {
-  --tw-text-opacity: 1;
-  color: rgb(147 51 234 / var(--tw-text-opacity));
 }
 
 .drop-shadow-2xl {
@@ -931,14 +941,14 @@ Ensure the default browser behavior of the `hidden` attribute.
   --tw-ring-color: rgb(147 51 234 / var(--tw-ring-opacity));
 }
 
-.focus\:ring-red-600:focus {
-  --tw-ring-opacity: 1;
-  --tw-ring-color: rgb(220 38 38 / var(--tw-ring-opacity));
-}
-
 .focus\:ring-white:focus {
   --tw-ring-opacity: 1;
   --tw-ring-color: rgb(255 255 255 / var(--tw-ring-opacity));
+}
+
+.focus\:ring-red-600:focus {
+  --tw-ring-opacity: 1;
+  --tw-ring-color: rgb(220 38 38 / var(--tw-ring-opacity));
 }
 
 .focus\:ring-opacity-40:focus {
@@ -947,8 +957,4 @@ Ensure the default browser behavior of the `hidden` attribute.
 
 .focus\:ring-offset-2:focus {
   --tw-ring-offset-width: 2px;
-}
-
-.focus\:ring-offset-1:focus {
-  --tw-ring-offset-width: 1px;
 }

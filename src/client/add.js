@@ -2,6 +2,7 @@ const form = document.getElementById("form");
 const downloadURL = document.getElementById("yt-link");
 const list = document.getElementById("list")
 const status = document.getElementById("status");
+const percent = document.getElementById("percent");
 
 const minimiseButton = document.getElementById("minimise-button");
 const fullscreenButton = document.getElementById("fullscreen-button");
@@ -9,20 +10,32 @@ const closeButton = document.getElementById("close-button");
 
 const report = document.getElementById("report");
 
-const {
-    ipcRenderer,
-    shell
-} = require('electron');
+//const Mutex = require("async-mutex").Mutex;
+//const FFmpeg = require("@ffmpeg/ffmpeg/dist/ffmpeg.min");
+const ytdl = require("ytdl-core");
+const ID3Writer = require("browser-id3-writer");
 
-const http = require('http');
+//const {
+//    createFFmpeg
+//} = FFmpeg;
+//const ffmpeg = createFFmpeg({
+//    log: true,
+//    logger: () => {}, // console.log,
+//    progress: () => {}, // console.log,
+//});
+//const ffmpegMutex = new Mutex();
+
+const {
+    shell,
+    ipcRenderer,
+    nativeImage
+} = require("electron");
+
 const fs = require("fs");
 const path = require("path");
 //const selectedFolder = document.getElementById("folders");
 
-const ytdl = require('ytdl-core');
-const ytkey = fs.readFileSync(path.join(__dirname, "../saves/ytkey.txt"), "utf-8");
-const YouTube = require("simple-youtube-api");
-const youtube = new YouTube(ytkey);
+const ytfps = require('ytfps');
 
 const ytsearch = require("yt-search");
 const videoFinder = async (query) => {
@@ -37,7 +50,7 @@ const videoFinder = async (query) => {
 const lyricsFinder = require("lyrics-finder");
 
 const {
-    exec
+    execSync, exec
 } = require("child_process");
 const illegalChars = [
     "|",
@@ -86,18 +99,13 @@ ipcRenderer.on("savesFolder", (event, data) => {
     savesPath = data;
     musicFolder = fs.readFileSync(path.join(savesPath, "folder.txt"), "utf-8");
     settings = JSON.parse(fs.readFileSync(path.join(savesPath, "settings.json"), "utf-8"));
-    /*getGallery(musicFolder).then(songs => {
-        let options = songs.folders.map(folder => `<option value=${folder}>${folder}</option>`).join('\n');
-
-        options += `<option value="use default">use default</option>`
-
-        selectedFolder.innerHTML = options;
-    });*/
 });
 
 let toDownload = 0;
 let downloaded = 0;
 let errored = 0;
+
+let toDownloadVideos = new Map();
 
 /**
  * 
@@ -105,37 +113,38 @@ let errored = 0;
  * @returns 
  */
 async function download(url) {
-    if(!fs.existsSync(musicFolder)) return status.innerText = "please choose a folder then restart this window to be able to download songs\n";
-    
-    if (url.match(/^https?:\/\/(www.youtube.com|youtube.com)\/playlist(.*)$/)) {
-        const playlist = await youtube.getPlaylist(url);
-        const videos = await playlist.getVideos();
+    if (!fs.existsSync(musicFolder)) return status.innerText = "please choose a folder then restart this window to be able to download songs\n";
 
+    if (url.match(/^https?:\/\/(www.youtube.com|youtube.com)\/playlist(.*)$/)) {
+        const playlist = await ytfps(url)
         await fs.mkdirSync(`${musicFolder}/${changeName(playlist.title)}`);
-        let index = 0
-        toDownload += videos.length;
-        
-        for (const video of videos) {
-            let video2
+
+        let index = 0;
+        let index2 = 0;
+        toDownload += playlist.video_count;
+        for (const video of playlist.videos) {
             try {
-                video2 = await ytdl.getInfo(video.url)
+                toDownloadVideos.set(`${++index2}- ${video.title}`, 0);
                 await downloadAudio({
-                    url: video2.videoDetails.video_url,
-                    title: `${++index}- ${video2.videoDetails.title}`
+                    url: video.url,
+                    title: `${++index}- ${video.title}`,
+                    thumbnail: video.thumbnail_url,
+                    artist: video.author.name
                 }, true, changeName(playlist.title));
             } catch (error) {
                 console.warn(`an error happened\n${error}`);
                 status.innerText = `an error happened\n${error}\n`;
                 errored++;
             }
-        } 
-        report.innerText = `Done: ${downloaded}, Error: ${errored}, Total: ${downloaded + errored}, of: ${toDownload}`;
+        }
     } else if (ytdl.validateURL(url)) {
         const video = await ytdl.getInfo(url);
 
         await downloadAudio({
             url: video.videoDetails.video_url,
-            title: video.videoDetails.title
+            title: video.videoDetails.title,
+            thumbnail: video.videoDetails.thumbnails[3].url,
+            artist: video.videoDetails.author.name
         })
         toDownload += 1;
         report.innerText = `Done: ${downloaded}, Error: ${errored}, Total: ${downloaded + errored}, of: ${toDownload}`;
@@ -158,7 +167,7 @@ async function download(url) {
             btn.innerText = "Download";
             btn.id = `${i}download`;
             btn.className = "px-3 py-[0.7] text-sm text-blue-600 font-semibold rounded-full border border-blue-200 hover:text-white hover:bg-blue-600 hover:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2"
-            
+
             btn2.innerText = "Stream";
             btn2.id = `${i}stream`;
             btn2.className = "px-3 py-[0.7] text-sm text-blue-600 font-semibold rounded-full border border-blue-200 hover:text-white hover:bg-blue-600 hover:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2"
@@ -183,19 +192,23 @@ async function download(url) {
                 list.innerHTML = "";
                 downloadAudio({
                     url: video.url,
-                    title: video.title
+                    title: video.title,
+                    thumbnail: video.thumbnail,
+                    artist: video.author.name
                 })
                 toDownload += 1;
                 report.innerText = `Done: ${downloaded}, Error: ${errored}, Total: ${downloaded + errored}, of: ${toDownload}`;
             }
 
             img.loading = "lazy";
-            
+
             btn.onclick = () => {
                 list.innerHTML = "";
                 downloadAudio({
                     url: video.url,
-                    title: video.title
+                    title: video.title,
+                    thumbnail: video.thumbnail,
+                    artist: video.author.name
                 })
                 toDownload += 1;
                 report.innerText = `Done: ${downloaded}, Error: ${errored}, Total: ${downloaded + errored}, of: ${toDownload}`;
@@ -220,7 +233,7 @@ async function download(url) {
                     youtube: video.url
                 });
             }
-            
+
             li.appendChild(name);
             li.appendChild(btn);
             li.appendChild(btn2);
@@ -234,6 +247,13 @@ async function download(url) {
     }
 }
 
+exec("ffmpeg -version", (error, stdout, stderr) => {
+    if(stderr){
+        status.innerText += "ffmpeg not found downloading without conversion\n"
+    }else{
+        status.innerText += "ffmpeg found downloading with conversion and metadata\n"
+    }
+})
 
 ipcRenderer.on("download", (event, args) => {
     document.getElementById(`${args}download`).click();
@@ -265,141 +285,261 @@ function changeName(realname) {
     return realname.split(/ +/g).join(" ");
 }
 
+const cropMaxWidth = (image) => {
+	const imageSize = image.getSize();
+	// standart youtube artwork width with margins from both sides is 280 + 720 + 280
+	if (imageSize.width === 1280 && imageSize.height === 720) {
+		return image.crop({
+			x: 280,
+			y: 0,
+			width: 720,
+			height: 720
+		});
+	}
+	return image;
+}
+
+const getImage = async (src) => {
+	const result = await fetch(src);
+    const buffer = Buffer.from(await result.arrayBuffer());
+	const output = nativeImage.createFromBuffer(buffer);
+	if (output.isEmpty() && !src.endsWith(".jpg") && src.includes(".jpg")) { // fix hidden webp files (https://github.com/th-ch/youtube-music/issues/315)
+		return getImage(src.slice(0, src.lastIndexOf(".jpg") + 4));
+	} else {
+		return output;
+	}
+};
+
 /**
  * a function that starts the video download and make it into an mp3 file
  * if it's a playlist the videos will be put inside a folder with the playlist name
  * and a numeric order for the playlist videos
- * @param {{url: string, title: string}} video 
+ * @param {{url: string, title: string, thumbnail: string, artist: string}} video 
  * @param {boolean} playlist
  * @param {string} plname
  */
 async function downloadAudio({
     url,
-    title
+    title,
+    thumbnail,
+    artist
 }, playlist = false, plname = null) {
     let thepath = "";
-    let path2 = "";
-    if(pathConfig === "random"){
+    //const releaseFFmpegMutex = await ffmpegMutex.acquire();
+    //let path2 = "";
+    /*if (pathConfig === "random") {
         thepath = playlist ? path.join(musicFolder, plname, `${changeName(title)}.mp4`) : path.join(musicFolder, `${changeName(title)}.mp4`);
         path2 = playlist ? path.join(musicFolder, plname, `${changeName(title)}.mp3`) : path.join(musicFolder, `${changeName(title)}.mp3`);
-    }else{
+    } else {
         thepath = playlist ? path.join(musicFolder, plname, `${changeName(title)}.mp4`) : path.join(musicFolder, pathConfig, `${changeName(title)}.mp4`);
         path2 = playlist ? path.join(musicFolder, plname, `${changeName(title)}.mp3`) : path.join(musicFolder, pathConfig, `${changeName(title)}.mp3`);
+    }*/
+    if (pathConfig === "random") {
+        thepath = playlist ? path.join(musicFolder, plname) : musicFolder;
+    } else {
+        thepath = playlist ? path.join(musicFolder, plname) : path.join(musicFolder, pathConfig);
     }
-    
-    if(!playlist) status.innerText += `Downloading to ${pathConfig}...\n`;
 
-    exec("ffmpeg -version", async(error, stdout, stderr) => {
-        console.log("Tring to get ffmpeg")
+    if (!playlist) status.innerText += `Downloading to ${pathConfig}...\n`;
+    let videoReadableStream;
+	try {
+		videoReadableStream = ytdl(url, {
+			filter: "audioonly",
+			quality: "highestaudio",
+			highWaterMark: 32 * 1024 * 1024, // 32 MB
+			requestOptions: { maxRetries: 3 },
+		});
+	} catch (err) {
+		sendError(err);
+		return;
+	}
 
-        console.log(stdout)
-        console.log(stderr)
+    const originalPath = path.join(thepath, changeName(title));
+    const outPath = path.join(thepath, changeName(title) + ".mp3");
 
-        if (stderr) {
-            console.log("ffmpeg not found");
-
-            status.innerText += `ffmpeg not found trying to download via the server\n`;
-            status.innerHTML += `<br>it is recommended to download ffmpeg to get the faster download speeds and be able to download playlists consistently
-            download ffmpeg <a href="https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-win64-gpl.zip">From here</a> any version works but I use this\n`
-
-            const file = fs.createWriteStream(path2);
-
-            http.get(`http://195.201.26.179:5050/download?url=${url}`, function(response) {
-                response.pipe(file);
-
-                response.on("open", () => {
-                    status.innerText += `downloading ${title}\n`;
-                });
-
-                // after download completed close filestream
-                file.on("finish", () => {
-                    file.close();
-                    status.innerText += `downloaded: ${title}.\n`;
-                    console.log("Download Completed");
-                    if(settings["search"].status)
-                        searchLyrics(title, fs.readFileSync(path.join(savesPath, "lyrics.txt"), "utf-8"));
-
-                    downloaded++;
-                    if((downloaded + errored) === toDownload) 
-                        status.innerText += `Download complete.\nDownloaded: ${downloaded} out of ${toDownload}\nErrors: ${errored}\n`;
-
-                    report.innerText = `Done: ${downloaded}, Error: ${errored}, Total: ${downloaded + errored}, of: ${toDownload}`;
-                });
-            }).on("error", (err) => {
-                status.innerText += err;
-                errored++;
-                if((downloaded + errored) === toDownload) 
-                    status.innerText += `Download complete.\nDownloaded: ${downloaded} out of ${toDownload}\nErrors: ${errored}\n`;
-
-                report.innerText = `Done: ${downloaded}, Error: ${errored}, Total: ${downloaded + errored}, of: ${toDownload}`;
-            });
-    
-            return;
-        }else{
-            await ytdl(url, {
-                filter: "audioonly",
-                quality: "highestaudio"
-            })
-            .pipe(
-                fs.createWriteStream(thepath)
-                .on("ready", () => {
-                    console.log(`downloading: ${title}...`);
-                    status.innerText += `downloading: ${title}...\n`;
+    let bitrate = "";
+    let durationMs = "";
+    const chunks = [];
+	videoReadableStream
+		.on("data", (chunk) => {
+			chunks.push(chunk);
+		})
+		.on("progress", (_chunkLength, downloaded, total) => {
+			const ratio = downloaded / total;
+			const progress = Math.floor(ratio * 100);
+            if(!playlist){
+                percent.innerText = `${title}: ${progress}%`
+            }else{
+                percent.innerText = ""
+                toDownloadVideos.set(title, progress);
+                toDownloadVideos.forEach((videoProgress, title) => {
+                    percent.innerText += `${title}: ${videoProgress}%\n`
                 })
-                .on("finish", () => {
-                    console.log(`downloaded: ${title}.`);
-                    status.innerText += `downloaded: ${title}.\n`;
-                    exec(`ffmpeg -i "${thepath}" "${path2}"`, (err, sout, serr) => {
-                        if (err) console.error(err);
-                        console.log("converted the file with the right metadata");
-                        status.innerText += "converted the file with the right metadata\n";
-                        fs.rm(thepath, (err) => {
-                            if (err) return console.error(`there was an error with deleting the file ${thepath}\n${err.message}\n`);
-                            status.innerText += `${title} was deleted successfully and replaced with the mp3 file\n(basically the file was converted)\n`;
-                            console.log(`${title} was deleted successfully and replaced with the mp3 file`);
-                            if(settings["search"].status)
-                                searchLyrics(title, fs.readFileSync(path.join(savesPath, "lyrics.txt"), "utf-8"));
+            }
+		})
+		.on("info", (info, format) => {
+			console.log(
+				"Downloading video - name:",
+				title,
+				"- quality:",
+				format.audioBitrate + "kbits/s"
+			);
+            bitrate = `${format.audioBitrate}k`
+            durationMs = format.approxDurationMs
+		})
+		.on("error", console.error)
+		.on("end", async () => {
+            exec("ffmpeg -version", async(error, stdout, stderr) => {
+                console.log("Tring to get ffmpeg")
+        
+                console.log(stdout)
+                console.log(stderr)
+        
+                if (stderr) {
+                    const buffer = Buffer.concat(chunks);
+                    try {
+                        fs.writeFileSync(originalPath, buffer)
+                        
+                        let fileBuffer = fs.readFileSync(originalPath);
 
-                            downloaded++;
-                            if((downloaded + errored) === toDownload) 
-                                status.innerText += `Download complete.\nDownloaded: ${downloaded} out of ${toDownload}\nErrors: ${errored}\n`;
+                        const songMetadata = {
+                            title: title,
+                            artist: artist,
+                            image: cropMaxWidth(await getImage(thumbnail))
+                        }
 
-                            report.innerText = `Done: ${downloaded}, Error: ${errored}, Total: ${downloaded + errored}, of: ${toDownload}`;
-                        })
-                    })
-                })
-                .on("error", (err) => {
-                    console.error(`there was an error while downloading ${title}\n${err}`)
-                    status.innerText += `\nthere was an error while downloading ${title}\n${err}\n`
+                        try {
+                            const coverBuffer = songMetadata.image && !songMetadata.image.isEmpty() ?
+                                songMetadata.image.toPNG() : null;
+                
+                            const writer = new ID3Writer(fileBuffer);
+                
+                            // Create the metadata tags
+                            writer
+                                .setFrame("TIT2", songMetadata.title)
+                                .setFrame("TPE1", [songMetadata.artist]);
+                            if (coverBuffer) {
+                                writer.setFrame("APIC", {
+                                    type: 3,
+                                    data: coverBuffer,
+                                    description: ""
+                                });
+                            }
+                            
+                            writer.addTag();
+                            fileBuffer = Buffer.from(writer.arrayBuffer);
+                        } catch (error) {
+                            console.error(error);
+                        }
 
-                    errored++;
-                    if((downloaded + errored) === toDownload)
-                        status.innerText += `Download complete.\nDownloaded: ${downloaded} out of ${toDownload}\nErrors: ${errored}\n`;
+                        fs.writeFileSync(outPath, fileBuffer);
+                    }catch(error){
+                        console.log(e);
+                        errored++;
+                        status.innerText += e + "\n";
+                        report.innerText = `Done: ${downloaded}, Error: ${errored}, Total: ${downloaded + errored}, of: ${toDownload}`;
+                    }finally{
+                        downloaded++;
+                        report.innerText = `Done: ${downloaded}, Error: ${errored}, Total: ${downloaded + errored}, of: ${toDownload}`;
+                        fs.rmSync(originalPath)
+                        status.innerText += `${title} has been downloaded\n`
+                        toDownloadVideos.clear();
+                        if (settings["search"].status)
+                            searchLyrics(title, fs.readFileSync(path.join(savesPath, "lyrics.txt"), "utf-8"));
+                    }
+                }else{
+                    const buffer = Buffer.concat(chunks);
+                    try {
+                        //if (!ffmpeg.isLoaded()) { 
+                        //    await ffmpeg.load();
+                        //}
+                
+                        //ffmpeg.FS("writeFile", changeName(title), buffer);
 
-                    report.innerText = `Done: ${downloaded}, Error: ${errored}, Total: ${downloaded + errored}, of: ${toDownload}`;
-                })
-            );
-        }
-    });
+                        fs.writeFileSync(originalPath, buffer)
+
+                        status.innerText += `converting ${title}\n`
+                        const metadata = `-metadata title="${title}" -metadata artist="${artist}"`
+                        //await ffmpeg.run(
+                        //    "-i",
+                        //    changeName(title),
+                        //    changeName(title) + ".mp3"
+                        //);
+
+                        const output = execSync(`ffmpeg -i "${originalPath}" ${metadata} -b:a ${bitrate} "${outPath}"`)
+
+                        console.log(output);
+
+                        let fileBuffer = fs.readFileSync(outPath);
+
+                        const songMetadata = {
+                            title: title,
+                            artist: artist,
+                            image: cropMaxWidth(await getImage(thumbnail))
+                        }
+
+                        try {
+                            const coverBuffer = songMetadata.image && !songMetadata.image.isEmpty() ?
+                                songMetadata.image.toPNG() : null;
+                
+                            const writer = new ID3Writer(fileBuffer);
+                
+                            // Create the metadata tags
+                            writer
+                                .setFrame("TIT2", songMetadata.title)
+                                .setFrame("TPE1", [songMetadata.artist]);
+                            if (coverBuffer) {
+                                writer.setFrame("APIC", {
+                                    type: 3,
+                                    data: coverBuffer,
+                                    description: ""
+                                });
+                            }
+                            
+                            writer.addTag();
+                            fileBuffer = Buffer.from(writer.arrayBuffer);
+                        } catch (error) {
+                            console.error(error);
+                        }
+
+                        fs.writeFileSync(outPath, fileBuffer);
+
+                    } catch (e) {
+                        console.log(e);
+                        errored++;
+                        status.innerText += e + "\n";
+                        report.innerText = `Done: ${downloaded}, Error: ${errored}, Total: ${downloaded + errored}, of: ${toDownload}`;
+                    } finally {
+                        downloaded++;
+                        report.innerText = `Done: ${downloaded}, Error: ${errored}, Total: ${downloaded + errored}, of: ${toDownload}`;
+                        fs.rmSync(originalPath)
+                        status.innerText += `${title} has been downloaded\n`
+                        toDownloadVideos.clear();
+                        if (settings["search"].status)
+                            searchLyrics(title, fs.readFileSync(path.join(savesPath, "lyrics.txt"), "utf-8"));
+                    }
+                }
+		    });
+        })
 }
 
-function searchLyrics(title, lyricsFolder){
+function searchLyrics(title, lyricsFolder) {
     console.log(`searching for lyrics for ${title}`);
     status.innerText += `searching for lyrics for ${title}\n`;
 
     lyricsFinder("", title)
-    .then(lyrics => {
-        if (lyrics) {
-            console.log(`found lyrics for ${title}`);
-            status.innerText += `found lyrics for ${title}\n`;
-            fs.writeFileSync(path.join(lyricsFolder, `${changeName(title)}.txt`), lyrics);
-            status.innerText += `lyrics for ${title} was saved\n`;
-        } else {
-            console.log(`couldn't find lyrics for ${title}`);
-            status.innerText += `couldn't find lyrics for ${title}\n`;
-        }
-    }).catch(err => {
-        console.error(err);
-        status.innerText += `${err}\n`;
-    })
+        .then(lyrics => {
+            if (lyrics) {
+                console.log(`found lyrics for ${title}`);
+                status.innerText += `found lyrics for ${title}\n`;
+                fs.writeFileSync(path.join(lyricsFolder, `${changeName(title)}.txt`), lyrics);
+                status.innerText += `lyrics for ${title} was saved\n`;
+            } else {
+                console.log(`couldn't find lyrics for ${title}`);
+                status.innerText += `couldn't find lyrics for ${title}\n`;
+            }
+        }).catch(err => {
+            console.error(err);
+            status.innerText += `${err}\n`;
+        })
 }

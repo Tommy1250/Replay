@@ -59,13 +59,14 @@ const createWindow = () => {
 	mainWindow = new BrowserWindow({
 		width: 1280,
 		height: 685,
+		minWidth: 800,
+		minHeight: 100,
 		frame: false,
 		autoHideMenuBar: true,
 		webPreferences: {
 			nodeIntegration: true,
 			nodeIntegrationInWorker: true,
 			nodeIntegrationInSubFrames: true,
-			enableRemoteModule: true,
 			contextIsolation: false
 		}
 	});
@@ -120,6 +121,13 @@ let settingsChanged = false;
 ipcMain.on("settingsChanged", (event, arg) => {
 	settingsChanged = true;
 });
+//app.disableHardwareAcceleration();
+/*app.commandLine.appendSwitch(
+	"js-flags",
+	// WebAssembly flags
+	"--experimental-wasm-threads"
+);
+app.commandLine.appendSwitch("enable-features", "SharedArrayBuffer"); // Required for downloader*/
 
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.
@@ -128,7 +136,6 @@ if (!gotTheLock) {
 	app.quit()
 } else {
 	app.on('second-instance', () => {
-		// Someone tried to run a second instance, we should focus our window.
 		mainWindow.show()
 	})
 
@@ -136,11 +143,11 @@ if (!gotTheLock) {
 		if (settings["update"].status === "1") {
 			require("./functions/update")(savesPath);
 		}
-
-		//app.setLoginItemSettings({
-		//	openAtLogin: settings["startup"].status,
-		//	path: app.getPath("exe")
-		//})
+		
+		app.setLoginItemSettings({
+			openAtLogin: settings["startup"].status,
+			path: app.getPath("exe")
+		})
 
 		const menuTemplate = [{
 				label: 'File',
@@ -242,8 +249,10 @@ if (!gotTheLock) {
 									height: 600,
 									frame: false,
 									webPreferences: {
-										nodeIntegration: true,
-										contextIsolation: false
+										contextIsolation: false,
+										nodeIntegrationInWorker: true,
+										nodeIntegration: true
+										//preload: path.join(__dirname, "functions", "preload.js")
 									}
 								});
 
@@ -347,6 +356,8 @@ if (!gotTheLock) {
 											title: 'Info',
 											message: 'Settings have not been applied.\nRestart the app at any time to apply changes.'
 										})
+										settings = JSON.parse(fs.readFileSync(path.join(savesPath, "settings.json"), "utf-8"))
+										mainWindow.webContents.send("settingsChanged", settings);
 									}
 								})
 							}
@@ -643,7 +654,7 @@ ipcMain.on("makeSongMenu", (event, arg) => {
 	const musicFolder = fs.readFileSync(path.join(savesPath, "folder.txt"), "utf-8")
 
 	getGallery(musicFolder).then(gallery => {
-		const songPath = arg.playlist === "random" ? path.join(musicFolder, arg.name) : path.join(musicFolder, arg.playlist, arg.name);
+		const songPath = arg.playlist === path.parse(musicFolder).base ? path.join(musicFolder, arg.name) : path.join(musicFolder, arg.playlist, arg.name);
 
 		for (let i = 0; i < gallery.folders.length; i++) {
 			const folder = gallery.folders[i];
@@ -651,7 +662,7 @@ ipcMain.on("makeSongMenu", (event, arg) => {
 				template[2].submenu.push({
 					label: folder,
 					click: () => {
-						if(folder === "random"){
+						if(folder === path.parse(musicFolder).base){
 							fs.copyFileSync(songPath, path.join(musicFolder, arg.name));
 						}else{
 							fs.copyFileSync(songPath, path.join(musicFolder, folder, arg.name));
@@ -668,7 +679,7 @@ ipcMain.on("makeSongMenu", (event, arg) => {
 				template[3].submenu.push({
 					label: folder,
 					click: () => {
-						if(folder === "random"){
+						if(folder === path.parse(musicFolder).base){
 							fs.copyFileSync(songPath, path.join(musicFolder, arg.name));
 						}else{
 							fs.copyFileSync(songPath, path.join(musicFolder, folder, arg.name));
@@ -710,7 +721,7 @@ ipcMain.on("makePlaylistMenu", (event, arg) => {
 			label: "Browse to folder",
 			click: () => {
 				let folder = fs.readFileSync(path.join(savesPath, "folder.txt"), "utf-8");
-				if (arg.name === "random") {
+				if (arg.name === path.parse(folder).base) {
 					shell.openPath(folder);
 				} else {
 					shell.openPath(path.join(folder, arg.name))
@@ -719,7 +730,7 @@ ipcMain.on("makePlaylistMenu", (event, arg) => {
 		}
 	]
 
-	if (arg.name !== "random") {
+	if (arg.name !== path.parse(fs.readFileSync(path.join(savesPath, "folder.txt"), "utf-8")).base) {
 		template.push({
 			label: "Rename",
 			click: () => {
@@ -863,7 +874,7 @@ function renameSong(songName, playlistName, newName) {
 	let folder = fs.readFileSync(path.join(savesPath, "folder.txt"), "utf-8");
 	let lyricsFolder = fs.readFileSync(path.join(savesPath, "lyrics.txt"), "utf-8");
 
-	if (playlistName === "random") {
+	if (playlistName === path.parse(folder).base) {
 		if (folder && folder !== "") {
 			if (fs.existsSync(folder)) {
 				if (fs.existsSync(path.join(folder, songName))) {
@@ -916,7 +927,7 @@ function renameSong(songName, playlistName, newName) {
 function deleteSong(songName, playlistName) {
 	let folder = fs.readFileSync(path.join(savesPath, "folder.txt"), "utf-8");
 
-	if (playlistName === "random") {
+	if (playlistName === path.parse(folder).base) {
 		if (folder && folder !== "") {
 			if (fs.existsSync(folder)) {
 				if (fs.existsSync(path.join(folder, songName))) {
@@ -1103,7 +1114,7 @@ if (settings["server"].enabled === "1") {
 
 		socket.on("get-latest", (cb) => {
 			if (!serverSong) return cb({
-				playlist: "random",
+				playlist: path.parse(fs.readFileSync(path.join(savesPath, "folder.txt"))).base,
 				number: 0
 			});
 			cb({

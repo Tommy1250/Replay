@@ -4,6 +4,7 @@ const discord = document.getElementById("discord");
 const update = document.getElementById("autoupdate");
 const search = document.getElementById("search");
 const metadata = document.getElementById("metadata");
+const startup = document.getElementById("startup");
 
 const server = document.getElementById("server");
 const port = document.getElementById("port");
@@ -15,6 +16,7 @@ const serverstatus = document.getElementById("serverstatus");
 const serveradress = document.getElementById("serveradress");
 const searchStatus = document.getElementById("searchstatus");
 const metadataStatus = document.getElementById("metadatastatus");
+const startupstatus = document.getElementById("startupstatus");
 
 const minimiseButton = document.getElementById("minimise-button");
 const fullscreenButton = document.getElementById("fullscreen-button");
@@ -53,6 +55,9 @@ ipcRenderer.on("savesFolder", (event, data) => {
 
     discord.checked = settings["discord"].status === "1" ? true:false
     discordstatus.innerText = settings["discord"].status === "1" ? "enabled" : "disabled";
+
+    startup.checked = settings["startup"].status
+    startupstatus.innerText = settings["startup"].status ? "enabled" : "disabled";
 
     update.checked = settings["update"].status === "1" ? true:false
     updatestatus.innerText = settings["update"].status === "1" ? "enabled" : "disabled";
@@ -93,6 +98,10 @@ discord.onclick = () => {
     discordstatus.innerText = discord.checked ? "enabled" : "disabled";
 }
 
+startup.onclick = () => {
+    startupstatus.innerText = startup.checked ? "enabled" : "disabled";
+}
+
 update.onclick = () => {
     updatestatus.innerText = update.checked ? "enabled" : "disabled";
 }
@@ -118,6 +127,7 @@ form.onsubmit = (ev) => {
     settings["server"].port = port.value.toString();
     settings["search"].status = search.checked;
     settings["metadata"].status = metadata.checked;
+    settings["startup"].status = startup.checked;
     saveSettings(settings);
 }
 

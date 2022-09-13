@@ -1,4 +1,5 @@
 const fs = require("fs");
+const path = require("path");
 const {
     promisify
 } = require("util")
@@ -38,7 +39,8 @@ async function getGallery(defolder) {
      * @type {{string: string[]}}
      */
     let songsMap = {};
-    songsMap["random"] = mp3files;
+    const basepath = path.parse(defolder).base;
+    songsMap[basepath] = mp3files;
 
     for (let i = 0; i < folders.length; i++) {
         const folder = folders[i];
@@ -54,7 +56,7 @@ async function getGallery(defolder) {
     }
 
     all.playlists = songsMap;
-    all.folders.push("random");
+    all.folders.push(basepath);
 
     return all;
 }
