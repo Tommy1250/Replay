@@ -3,6 +3,10 @@ const downloadURL = document.getElementById("yt-link");
 const list = document.getElementById("list")
 const status = document.getElementById("status");
 const percent = document.getElementById("percent");
+/**
+ * @type {HTMLSelectElement}
+ */
+const folderTo = document.getElementById("folder");
 
 const minimiseButton = document.getElementById("minimise-button");
 const fullscreenButton = document.getElementById("fullscreen-button");
@@ -28,7 +32,8 @@ const ID3Writer = require("browser-id3-writer");
 const {
     shell,
     ipcRenderer,
-    nativeImage
+    nativeImage,
+    NativeImage
 } = require("electron");
 
 const fs = require("fs");
@@ -43,9 +48,9 @@ const videoFinder = async (query) => {
     return (resault.videos.length > 1) ? resault.videos : null
 }
 
-/*const {
+const {
     getGallery
-} = require("../gallery");*/
+} = require("../gallery");
 
 const lyricsFinder = require("lyrics-finder");
 
@@ -91,7 +96,7 @@ function downloadSong() {
 let savesPath = "";
 let musicFolder = "";
 let settings = {};
-let pathConfig = "random";
+let folders = [];
 
 ipcRenderer.send("getFolder");
 
@@ -99,8 +104,14 @@ ipcRenderer.on("savesFolder", (event, data) => {
     savesPath = data;
     musicFolder = fs.readFileSync(path.join(savesPath, "folder.txt"), "utf-8");
     settings = JSON.parse(fs.readFileSync(path.join(savesPath, "settings.json"), "utf-8"));
+    getGallery(musicFolder).then(library => {
+        folders = library.folders;
+        folderTo.innerHTML = library.folders.map(folder => `<option>${folder}</option>`).join("\n");
+        folderTo.selectedIndex = folders.indexOf(path.parse(musicFolder).base);
+    })
 });
 
+let pathConfig = path.parse(musicFolder).base;
 let toDownload = 0;
 let downloaded = 0;
 let errored = 0;
@@ -129,7 +140,9 @@ async function download(url) {
                     url: video.url,
                     title: `${++index}- ${video.title}`,
                     thumbnail: video.thumbnail_url,
-                    artist: video.author.name
+                    artist: video.author.name,
+                    originalTitle: video.title,
+                    album: playlist.title
                 }, true, changeName(playlist.title));
             } catch (error) {
                 console.warn(`an error happened\n${error}`);
@@ -144,7 +157,9 @@ async function download(url) {
             url: video.videoDetails.video_url,
             title: video.videoDetails.title,
             thumbnail: video.videoDetails.thumbnails[3].url,
-            artist: video.videoDetails.author.name
+            artist: video.videoDetails.author.name,
+            originalTitle: video.videoDetails.title,
+            album: video.videoDetails.videoId
         })
         toDownload += 1;
         report.innerText = `Done: ${downloaded}, Error: ${errored}, Total: ${downloaded + errored}, of: ${toDownload}`;
@@ -174,7 +189,8 @@ async function download(url) {
 
             btn3.innerText = "Open";
             btn3.id = `${i}open`;
-            btn3.style.visibility = "hidden";
+            //btn3.style.visibility = "hidden";
+            btn3.style.display = "none";
 
             btn3.onclick = () => {
                 shell.openExternal(video.url);
@@ -194,7 +210,9 @@ async function download(url) {
                     url: video.url,
                     title: video.title,
                     thumbnail: video.thumbnail,
-                    artist: video.author.name
+                    artist: video.author.name,
+                    originalTitle: video.title,
+                    album: video.id
                 })
                 toDownload += 1;
                 report.innerText = `Done: ${downloaded}, Error: ${errored}, Total: ${downloaded + errored}, of: ${toDownload}`;
@@ -208,7 +226,9 @@ async function download(url) {
                     url: video.url,
                     title: video.title,
                     thumbnail: video.thumbnail,
-                    artist: video.author.name
+                    artist: video.author.name,
+                    originalTitle: video.title,
+                    album: video.id
                 })
                 toDownload += 1;
                 report.innerText = `Done: ${downloaded}, Error: ${errored}, Total: ${downloaded + errored}, of: ${toDownload}`;
@@ -230,7 +250,8 @@ async function download(url) {
                 ipcRenderer.send("stream", {
                     url: `http://195.201.26.179:5050/stream?url=${video.url}`,
                     title: video.title,
-                    youtube: video.url
+                    youtube: video.url,
+                    image: video.thumbnail
                 });
             }
 
@@ -265,9 +286,15 @@ ipcRenderer.on("stream", (event, args) => {
 
 ipcRenderer.on("download-to", (event, args) => {
     console.log(args);
-    pathConfig = args.path
+    pathConfig = args.path;
+    folderTo.selectedIndex = folders.indexOf(args.path);
     document.getElementById(`${args.number}download`).click();
 })
+
+folderTo.onchange = (ev) => {
+    pathConfig = folders[folderTo.selectedIndex];
+    console.log(pathConfig);
+}
 
 ipcRenderer.on("open-link", (event, args) => {
     document.getElementById(`${args}open`).click();
@@ -285,10 +312,15 @@ function changeName(realname) {
     return realname.split(/ +/g).join(" ");
 }
 
+/**
+ * 
+ * @param {NativeImage} image 
+ * @returns 
+ */
 const cropMaxWidth = (image) => {
 	const imageSize = image.getSize();
 	// standart youtube artwork width with margins from both sides is 280 + 720 + 280
-	if (imageSize.width === 1280 && imageSize.height === 720) {
+	if (imageSize.width >= 1280 && imageSize.height >= 720) {
 		return image.crop({
 			x: 280,
 			y: 0,
@@ -299,6 +331,11 @@ const cropMaxWidth = (image) => {
 	return image;
 }
 
+/**
+ * 
+ * @param {string} src 
+ * @returns {NativeImage}
+ */
 const getImage = async (src) => {
 	const result = await fetch(src);
     const buffer = Buffer.from(await result.arrayBuffer());
@@ -314,7 +351,7 @@ const getImage = async (src) => {
  * a function that starts the video download and make it into an mp3 file
  * if it's a playlist the videos will be put inside a folder with the playlist name
  * and a numeric order for the playlist videos
- * @param {{url: string, title: string, thumbnail: string, artist: string}} video 
+ * @param {{url: string, title: string, thumbnail: string, artist: string, originalTitle: string, album: string}} video 
  * @param {boolean} playlist
  * @param {string} plname
  */
@@ -322,7 +359,9 @@ async function downloadAudio({
     url,
     title,
     thumbnail,
-    artist
+    artist,
+    originalTitle,
+    album
 }, playlist = false, plname = null) {
     let thepath = "";
     //const releaseFFmpegMutex = await ffmpegMutex.acquire();
@@ -334,7 +373,7 @@ async function downloadAudio({
         thepath = playlist ? path.join(musicFolder, plname, `${changeName(title)}.mp4`) : path.join(musicFolder, pathConfig, `${changeName(title)}.mp4`);
         path2 = playlist ? path.join(musicFolder, plname, `${changeName(title)}.mp3`) : path.join(musicFolder, pathConfig, `${changeName(title)}.mp3`);
     }*/
-    if (pathConfig === "random") {
+    if (pathConfig === path.parse(musicFolder).base) {
         thepath = playlist ? path.join(musicFolder, plname) : musicFolder;
     } else {
         thepath = playlist ? path.join(musicFolder, plname) : path.join(musicFolder, pathConfig);
@@ -358,7 +397,6 @@ async function downloadAudio({
     const outPath = path.join(thepath, changeName(title) + ".mp3");
 
     let bitrate = "";
-    let durationMs = "";
     const chunks = [];
 	videoReadableStream
 		.on("data", (chunk) => {
@@ -385,7 +423,6 @@ async function downloadAudio({
 				format.audioBitrate + "kbits/s"
 			);
             bitrate = `${format.audioBitrate}k`
-            durationMs = format.approxDurationMs
 		})
 		.on("error", console.error)
 		.on("end", async () => {
@@ -403,9 +440,10 @@ async function downloadAudio({
                         let fileBuffer = fs.readFileSync(originalPath);
 
                         const songMetadata = {
-                            title: title,
+                            title: originalTitle,
                             artist: artist,
-                            image: cropMaxWidth(await getImage(thumbnail))
+                            image: cropMaxWidth(await getImage(thumbnail)),
+                            album: album
                         }
 
                         try {
@@ -417,7 +455,8 @@ async function downloadAudio({
                             // Create the metadata tags
                             writer
                                 .setFrame("TIT2", songMetadata.title)
-                                .setFrame("TPE1", [songMetadata.artist]);
+                                .setFrame("TPE1", [songMetadata.artist])
+                                .setFrame("TALB", songMetadata.album);
                             if (coverBuffer) {
                                 writer.setFrame("APIC", {
                                     type: 3,
@@ -445,7 +484,7 @@ async function downloadAudio({
                         status.innerText += `${title} has been downloaded\n`
                         toDownloadVideos.clear();
                         if (settings["search"].status)
-                            searchLyrics(title, fs.readFileSync(path.join(savesPath, "lyrics.txt"), "utf-8"));
+                            searchLyrics(originalTitle, fs.readFileSync(path.join(savesPath, "lyrics.txt"), "utf-8"));
                     }
                 }else{
                     const buffer = Buffer.concat(chunks);
@@ -459,7 +498,7 @@ async function downloadAudio({
                         fs.writeFileSync(originalPath, buffer)
 
                         status.innerText += `converting ${title}\n`
-                        const metadata = `-metadata title="${title}" -metadata artist="${artist}"`
+                        const metadata = `-metadata title="${changeName(originalTitle)}" -metadata artist="${artist}"`
                         //await ffmpeg.run(
                         //    "-i",
                         //    changeName(title),
@@ -473,9 +512,10 @@ async function downloadAudio({
                         let fileBuffer = fs.readFileSync(outPath);
 
                         const songMetadata = {
-                            title: title,
+                            title: originalTitle,
                             artist: artist,
-                            image: cropMaxWidth(await getImage(thumbnail))
+                            image: cropMaxWidth(await getImage(thumbnail)),
+                            album: album
                         }
 
                         try {
@@ -487,7 +527,8 @@ async function downloadAudio({
                             // Create the metadata tags
                             writer
                                 .setFrame("TIT2", songMetadata.title)
-                                .setFrame("TPE1", [songMetadata.artist]);
+                                .setFrame("TPE1", [songMetadata.artist])
+                                .setFrame("TALB", songMetadata.album);
                             if (coverBuffer) {
                                 writer.setFrame("APIC", {
                                     type: 3,
@@ -516,7 +557,7 @@ async function downloadAudio({
                         status.innerText += `${title} has been downloaded\n`
                         toDownloadVideos.clear();
                         if (settings["search"].status)
-                            searchLyrics(title, fs.readFileSync(path.join(savesPath, "lyrics.txt"), "utf-8"));
+                            searchLyrics(originalTitle, fs.readFileSync(path.join(savesPath, "lyrics.txt"), "utf-8"));
                     }
                 }
 		    });

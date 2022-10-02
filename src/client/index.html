@@ -152,6 +152,7 @@
             <button class="no-drag hover:bg-red-600 bg-opacity-75 w-5 h-4 px-1" id="close-button"><img class="icon" src="../assets/cross.png"></button>
         </div>
     </div>
+    <div id="overlay" class="fixed h-full w-full hidden content-center bg-black bg-opacity-50"><p class="text-center text-white pt-[30vh]">Drop songs here to play!</p></div>
     <div class="main">
         <!-- <h1 id="userId" class="text-3xl font-bold"></h1> -->
         <div class="left grid scroll-alone mb-[80px]">
@@ -182,7 +183,10 @@
     <div class="player">
         <div class="up-left">
             <hr class="border-gray-700">
-            <h2 id="np" class="text-xl font-bold cursor-pointer overflow-hidden h-5"></h2>
+            <section class="flex">
+                <img id="coverimg" class="w-[35px] h-[35px] mr-1" style="display: none; object-fit: contain; align-items: center;"/>
+                <h2 id="np" class="text-xl font-bold cursor-pointer overflow-hidden h-5"></h2>
+            </section>
         </div>
         
         <div class="up-right">

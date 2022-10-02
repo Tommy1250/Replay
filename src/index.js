@@ -319,7 +319,7 @@ if (!gotTheLock) {
 					if (!settingsWindow) {
 						settingsWindow = new BrowserWindow({
 							width: 800,
-							height: 600,
+							height: 640,
 							frame: false,
 							webPreferences: {
 								nodeIntegration: true,
@@ -1172,19 +1172,18 @@ if (settings["server"].enabled === "1") {
 		console.log(`listening on port ${settings["server"].port}`)
 	})
 
-	server.on("error", (err) => {
+	server.on("error", async(err) => {
 		console.error(err);
 
-		app.on("ready", () => {
-			if (gotTheLock) {
-				const dialogOpts = {
-					type: 'error',
-					title: 'Error',
-					detail: "There was an error with the Replay remote server!\nplease make sure that its port is not being used or change it through the settings menu."
-				}
-				dialog.showMessageBox(dialogOpts)
+		await app.whenReady()
+		if (gotTheLock) {
+			const dialogOpts = {
+				type: 'error',
+				title: 'Error',
+				detail: "There was an error with the Replay remote server!\nplease make sure that its port is not being used or change it through the settings menu."
 			}
-		})
+			dialog.showMessageBox(dialogOpts)
+		}
 	})
 
 }

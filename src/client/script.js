@@ -10,6 +10,10 @@ const player = document.getElementById("player");
 const nextbtn = document.getElementById("next");
 const prevbtn = document.getElementById("prev");
 const nowplaying = document.getElementById("np");
+/**
+ * @type {HTMLImageElement}
+ */
+const coverImg = document.getElementById("coverimg");
 const currentPlaylist = document.getElementById("currentplaylist");
 const plinfo = document.getElementById("plinfo");
 const pltime = document.getElementById("pltime");
@@ -31,6 +35,7 @@ const volumeValue = document.getElementById("davolume");
 
 const playlist = document.getElementById("playlists");
 const htmlsongs = document.getElementById("songs");
+const dragArea = document.getElementById("overlay");
 
 const search = document.getElementById("search");
 const clearSearch = document.getElementById("clearSearch");
@@ -349,6 +354,8 @@ document.addEventListener('keydown', (event) => {
 })
 
 ipcRenderer.on("stream", (event, arg) => {
+    coverImg.style.display = "initial";
+    coverImg.src = arg.image;
     nowplaying.innerText = arg.title;
     nowplaying.onclick = () => {
         shell.openExternal(arg.youtube);
@@ -377,11 +384,32 @@ function updatePlayer(event, {
             }
 
             if (current.playlist === path.parse(folder).base) {
-                player.src = `${folder}/${songs.playlists[current.playlist][current.number]}`
+                let songPath = path.join(folder, songs.playlists[current.playlist][current.number]);
+                player.src = songPath;
+                if(settings["metadata"].status){
+                    musicMetadata.parseFile(songPath).then(data => {
+                        if(data.common.picture){
+                            coverImg.src = `data:image/png;base64,${data.common.picture[0].data.toString("base64")}`
+                            coverImg.style.display = "initial";
+                        }else{
+                            coverImg.style.display = "none";
+                        }
+                    })
+                }
             } else {
-                player.src = `${folder}/${current.playlist}/${songs.playlists[current.playlist][current.number]}`
+                let songPath = path.join(folder, current.playlist, songs.playlists[current.playlist][current.number]);
+                player.src = songPath;
+                if(settings["metadata"].status){
+                    musicMetadata.parseFile(songPath).then(data => {
+                        if(data.common.picture){
+                            coverImg.src = `data:image/png;base64,${data.common.picture[0].data.toString("base64")}`
+                            coverImg.style.display = "initial";
+                        }else{
+                            coverImg.style.display = "none";
+                        }
+                    })
+                }
             }
-
 
             if (!firstTime) player.play();
             else firstTime = false;
@@ -919,3 +947,54 @@ function makegallery() {
         }
     });
 }
+
+/**
+ * 
+ * @param {string} file 
+ * @returns {boolean}
+ */
+const isAudio = (file) => {
+    return file.endsWith(".mp3") ||
+    file.endsWith(".flac") ||
+    file.endsWith(".m4a") ||
+    file.endsWith(".wav") ||
+    file.endsWith(".ogg")
+}
+
+//drag and drop methods
+document.addEventListener("dragover", (e) => {
+    e.stopPropagation();
+    e.preventDefault();
+})
+
+document.addEventListener("drop", (e) => {
+    e.stopPropagation();
+    e.preventDefault();
+
+    console.log("Drop");
+
+    dragArea.style.display = "none";
+
+    const files = e.dataTransfer.files;
+    const filePath = files[0].path;
+
+    if(isAudio(files[0].name)){
+        if(settings["metadata"].status){
+            musicMetadata.parseFile(filePath).then(data => {
+                if(data.common.picture){
+                    coverImg.src = `data:image/png;base64,${data.common.picture[0].data.toString("base64")}`
+                    coverImg.style.display = "initial";
+                }else{
+                    coverImg.style.display = "none";
+                }
+            })
+        }
+        nowplaying.innerText = filter(files[0].name);
+        const parsedPath = path.parse(filePath);
+        nowplaying.onclick = () => {
+            shell.openPath(parsedPath.dir);
+        }
+        player.src = filePath;
+        player.play();
+    }
+})

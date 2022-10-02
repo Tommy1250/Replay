@@ -512,8 +512,8 @@ Ensure the default browser behavior of the `hidden` attribute.
   margin-top: 24px;
 }
 
-.mb-\[78px\] {
-  margin-bottom: 78px;
+.mb-\[80px\] {
+  margin-bottom: 80px;
 }
 
 .mb-\[85px\] {
@@ -524,8 +524,8 @@ Ensure the default browser behavior of the `hidden` attribute.
   margin-right: 8px;
 }
 
-.mb-\[80px\] {
-  margin-bottom: 80px;
+.mt-5 {
+  margin-top: 32px;
 }
 
 .flex {
@@ -544,16 +544,20 @@ Ensure the default browser behavior of the `hidden` attribute.
   height: 24px;
 }
 
-.h-5 {
-  height: 32px;
-}
-
 .h-\[35px\] {
   height: 35px;
 }
 
+.h-5 {
+  height: 32px;
+}
+
 .h-\[75px\] {
   height: 75px;
+}
+
+.h-full {
+  height: 100%;
 }
 
 .w-5 {
@@ -564,12 +568,12 @@ Ensure the default browser behavior of the `hidden` attribute.
   width: 33.333333%;
 }
 
-.w-full {
-  width: 100%;
-}
-
 .w-\[35px\] {
   width: 35px;
+}
+
+.w-full {
+  width: 100%;
 }
 
 .w-2\/3 {
@@ -586,6 +590,10 @@ Ensure the default browser behavior of the `hidden` attribute.
 
 .flex-row {
   flex-direction: row;
+}
+
+.content-center {
+  align-content: center;
 }
 
 .overflow-hidden {
@@ -622,6 +630,10 @@ Ensure the default browser behavior of the `hidden` attribute.
   border-width: 2px;
 }
 
+.border-none {
+  border-style: none;
+}
+
 .border-blue-200 {
   --tw-border-opacity: 1;
   border-color: rgb(191 219 254 / var(--tw-border-opacity));
@@ -655,6 +667,31 @@ Ensure the default browser behavior of the `hidden` attribute.
 .bg-neutral-900 {
   --tw-bg-opacity: 1;
   background-color: rgb(23 23 23 / var(--tw-bg-opacity));
+}
+
+.bg-black {
+  --tw-bg-opacity: 1;
+  background-color: rgb(0 0 0 / var(--tw-bg-opacity));
+}
+
+.bg-gray-700 {
+  --tw-bg-opacity: 1;
+  background-color: rgb(55 65 81 / var(--tw-bg-opacity));
+}
+
+.bg-gray-500 {
+  --tw-bg-opacity: 1;
+  background-color: rgb(107 114 128 / var(--tw-bg-opacity));
+}
+
+.bg-zinc-700 {
+  --tw-bg-opacity: 1;
+  background-color: rgb(63 63 70 / var(--tw-bg-opacity));
+}
+
+.bg-zinc-800 {
+  --tw-bg-opacity: 1;
+  background-color: rgb(39 39 42 / var(--tw-bg-opacity));
 }
 
 .bg-opacity-50 {
@@ -732,6 +769,10 @@ Ensure the default browser behavior of the `hidden` attribute.
 
 .pr-6 {
   padding-right: 48px;
+}
+
+.pt-\[30vh\] {
+  padding-top: 30vh;
 }
 
 .text-left {
