@@ -68,6 +68,10 @@
             <input id="metadata" type="checkbox">
             <label for="metadata" id="metadatastatus"></label>
         </div>
+        <div>
+            <h1>Select output source: </h1>
+            <select id="output" class="text-white bg-zinc-800 border-none"></select>
+        </div>
         <br>
         <div>
             <h1>Control Server</h1>
@@ -85,9 +89,12 @@
             <label for="lyrics">Lyrics Folder Location</label>
             <input id="lyrics" type="text" readonly class="text-black rounded-md border-2 border-black overflow-hidden pr-6 w-full">
         </div>
-        <input type="submit" value="Submit" class="fixed right-1 py-[0.5] px-[0.5] border rounded-md border-white bg-white text-black hover:border-black hover:text-white hover:bg-black">
+        <div style="display: grid; grid-template-columns: auto auto auto;">
+            <button type="button" id="exit" class="py-[0.5] px-[0.5] border rounded-md border-white bg-white text-black hover:border-black hover:text-white hover:bg-black">Exit without restart</button>
+            <footer>Some settings may not apply without restart</footer>
+            <input type="submit" value="Submit" class="py-[0.5] px-[0.5] border rounded-md border-white bg-white text-black hover:border-black hover:text-white hover:bg-black">
+        </div>
     </form>
-    <footer class="fixed bottom-1 left-1">All Settings Require Application Restart</footer>
     <div class="bar bg-opacity-50 fixed top-[0]">
         <div>
             <p class="px-1">Settings</p>

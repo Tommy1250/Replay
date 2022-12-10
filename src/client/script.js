@@ -26,6 +26,7 @@ const lyricsHTML = document.getElementById("lyrics");
 
 const loop = document.getElementById("loop");
 const shuffle = document.getElementById("shuffle");
+const speed = document.getElementById("speed");
 
 /**
  * @type {HTMLInputElement}
@@ -282,6 +283,27 @@ shuffle.onclick = () => {
     fs.writeFileSync(path.join(savesPath, "settings.json"), JSON.stringify(settings));
 }
 
+speed.addEventListener("click", () => {
+    if(player.playbackRate < 2) {
+        player.playbackRate += 0.25;
+    }
+    else{
+        player.playbackRate = 0.25;
+    }
+    speed.innerText = `speed ${player.playbackRate}x`;
+})
+
+speed.addEventListener("wheel", (ev) => {
+    if(ev.deltaY == -100){
+        if(player.playbackRate == 16) player.playbackRate = 0.25;
+        else player.playbackRate += 0.25;
+    }else{
+        if(player.playbackRate == 0.25) player.playbackRate = 16;
+        else player.playbackRate -= 0.25;
+    }
+    speed.innerText = `speed ${player.playbackRate}x`;
+});
+
 clearSearch.onclick = () => {
     search.value = "";
     searchPlaylist(search.value);
@@ -448,6 +470,78 @@ function updatePlayer(event, {
     }
 
 }
+
+navigator.mediaDevices.addEventListener("devicechange", async() => {
+    if(settings["output"].id === "default"){
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        for (let i = 0; i < devices.length; i++) {
+            const device = devices[i];
+            if(device.kind === "audiooutput" && device.deviceId === "default"){
+                player.pause();
+                player.setSinkId(device.deviceId)
+                .then(() => {
+                    console.log('Audio output device attached: ' + device.deviceId);
+                    player.play();
+                    ipcRenderer.send("serverOutputChange", ({
+                        label: device.label, 
+                        deviceId: device.deviceId
+                    }))
+                })
+                .catch(function(error) {
+                    console.error(error);
+                });
+                continue;
+            }
+        }
+    }
+})
+
+ipcRenderer.on("outputChange", (event, arg) => {
+    player.pause();
+    player.setSinkId(arg)
+        .then(() => {
+            console.log('Audio output device attached: ' + arg);
+            settings["output"].id = arg;
+            fs.writeFileSync(path.join(savesPath, 'settings.json'), JSON.stringify(settings));
+            player.play();
+            
+            ipcRenderer.send("serverOutputChange", ({
+                deviceId: arg,
+                label: "none"
+            }))
+        })
+        .catch(function(error) {
+            console.error(error);
+        });
+})
+
+ipcRenderer.on("getOutputDevices", () => {
+    let gotSaved = false;
+    let payload = {
+        devices: [],
+        current: ""
+    }
+    navigator.mediaDevices.enumerateDevices()
+    .then((devices) => { 
+        for (let i = 0; i < devices.length; i++) {
+            const device = devices[i];
+            if(device.kind === "audiooutput"){
+                if(device.deviceId === settings["output"].id && !gotSaved){
+                    gotSaved = true;
+                    payload.current = device.deviceId;
+                }
+                payload.devices.push({
+                    deviceId: device.deviceId,
+                    label: device.label
+                });
+            }
+        }
+        ipcRenderer.send("outputDevices", (payload));
+    })
+    .catch((err) => {
+        console.error(err)
+    })
+})
 
 ipcRenderer.on("lyrics", (event, arg) => {
     lyricsHTML.innerText = arg;
@@ -733,7 +827,7 @@ function changeTimelinePosition() {
 
 player.ontimeupdate = changeTimelinePosition;
 
-function setupPlayer() {
+async function setupPlayer() {
     current = JSON.parse(fs.readFileSync(path.join(savesPath, "latest.json"), "utf-8"));
 
     switch (settings["loop"].status) {
@@ -763,6 +857,37 @@ function setupPlayer() {
     updatePlayer("change", {
         songNumber: current
     });
+
+    if(!settings["output"]){
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        for (let i = 0; i < devices.length; i++) {
+            const device = devices[i];
+            if(device.kind === "audiooutput" && device.label.startsWith("Default")){
+                player.setSinkId(device.deviceId)
+                .then(() => {
+                    console.log('Audio output device attached: ' + device.deviceId);
+                    settings["output"] = {
+                        "id": ""
+                    };
+                    settings["output"].id = device.deviceId;
+                    settings = fs.writeFileSync(path.join(savesPath, "settings.json"), JSON.stringify(settings));
+                    ipcRenderer.send("settingsChangedNoRestart");
+                })
+                .catch(function(error) {
+                    console.error(error);
+                });
+                continue;
+            }
+        }
+    }else{
+        player.setSinkId(settings["output"].id)
+            .then(() => {
+                console.log('Audio output device attached: ' + settings["output"].id);
+            })
+            .catch(function(error) {
+                console.error(error);
+            });
+    }
 }
 
 /**

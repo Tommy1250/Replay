@@ -7,6 +7,8 @@ const minimiseButton = document.getElementById("minimise-button");
 const fullscreenButton = document.getElementById("fullscreen-button");
 const closeButton = document.getElementById("close-button");
 
+const editBtn = document.getElementById("editBtn");
+
 const fs = require("fs");
 const path = require("path");
 
@@ -23,7 +25,7 @@ const {
 
 ipcRenderer.on("lyrics", (event, data) => {
     current = data;
-    lyricsHTML.innerText = data.lyrics;
+    lyricsHTML.value = data.lyrics;
 });
 
 if(!current.name){
@@ -50,6 +52,23 @@ closeButton.onclick = () => {
     ipcRenderer.send("close-button-lyrics")
 }
 
+let editing = false;
+
+editBtn.onclick = () => {
+    if(!editing){
+        editing = true;
+        savebtn.disabled = true;
+        editBtn.innerText = "Save changes";
+        lyricsHTML.removeAttribute("readonly");
+    }else{
+        editing = false;
+        savebtn.disabled = false;
+        editBtn.innerText = "Edit lyrics";
+        lyricsHTML.setAttribute("readonly", true);
+        savelyrics();
+    }
+}
+
 savebtn.onclick = () => {
     savelyrics();
 }
@@ -57,8 +76,8 @@ savebtn.onclick = () => {
 function savelyrics() {
     const lyricsLocation = fs.readFileSync(path.join(savesPath, "lyrics.txt"), "utf-8");
     if(fs.existsSync(lyricsLocation)){
-        fs.writeFileSync(`${lyricsLocation}/${current.name}.txt`, lyricsHTML.innerText);
-        ipcRenderer.send("updateLyrics", {name: current.name, lyrics: lyricsHTML.innerText});
+        fs.writeFileSync(`${lyricsLocation}/${current.name}.txt`, lyricsHTML.value);
+        ipcRenderer.send("updateLyrics", {name: current.name, lyrics: lyricsHTML.value});
     }else{
         searchbar.value = "please choose a lyrics folder";
     }
@@ -66,6 +85,7 @@ function savelyrics() {
 
 form.onsubmit = (event) => {
     event.preventDefault();
+    if(editing) return searchbar.value = "Please exit edit";
     searchLyrics();
 }
 
@@ -77,14 +97,14 @@ async function searchLyrics() {
     lyricsFinder("", search)
     .then((lyrics) => {
         if(lyrics){
-            lyricsHTML.innerText = lyrics;
+            lyricsHTML.value = lyrics;
         }else{
-            lyricsHTML.innerText = "Song not found!";
+            lyricsHTML.value = "Song not found!";
         }
     })
     .catch((err) => {
         console.log(err);
-        lyricsHTML.innerText = "Song not found!";
+        lyricsHTML.value = "Song not found!";
     })
     
     /*try{

@@ -34,6 +34,8 @@ const search = document.getElementById("search");
 const clearSearch = document.getElementById("clearSearch");
 const searchForm = document.getElementById("searchForm");
 
+const outputDevices = document.getElementById("output");
+
 let current = {
     number: 0,
     playlist: "random"
@@ -234,9 +236,43 @@ function setupPlayer(lesongs) {
         shufflebtn.innerText = cb.shuffle ? "Shuffle on" : "Shuffle off";
         mutebtn.innerText = cb.mute ? "UnMute" : "Mute";
         pausebtn.innerText = cb.play ? "Pause" : "Play";
+
+        const output = cb.output;
+        for (let i = 0; i < output.devices.length; i++) {
+            const device = output.devices[i];
+            const option = document.createElement("option");
+            option.value = device.deviceId;
+            option.innerText = device.label
+            outputDevices.appendChild(option);
+
+            if(device.deviceId === output.current) outputDevices.selectedIndex = i;
+        }
+        
     })
 
     playerDone = true;
+}
+
+socket.on("output-change", (output) => {
+    if(output.deviceId === "default" && output.label !== "none"){
+        outputDevices[0].innerText = output.label
+    }else{
+        for (let i = 0; i < outputDevices.length; i++) {
+            const device = outputDevices[i];
+            if(device.value === output.deviceId){
+                outputDevices.selectedIndex = i
+                continue;
+            }
+        }
+    }
+})
+
+outputDevices.onchange = () => {
+    if(!recieved){
+        socket.emit("update-output", outputDevices[outputDevices.selectedIndex].value)
+    }else{
+        recieved = false;
+    }
 }
 
 function handleLoop(status) {

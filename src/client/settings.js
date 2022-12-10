@@ -22,6 +22,9 @@ const minimiseButton = document.getElementById("minimise-button");
 const fullscreenButton = document.getElementById("fullscreen-button");
 const closeButton = document.getElementById("close-button");
 
+const exitBtn = document.getElementById("exit");
+const output = document.getElementById("output");
+
 const ip = require("ip");
 const fs = require("fs");
 const path = require("path");
@@ -68,12 +71,39 @@ ipcRenderer.on("savesFolder", (event, data) => {
     metadata.checked = settings["metadata"].status;
     metadataStatus.innerText = settings["metadata"].status ? "enabled" : "disabled";
 
+    let selectedAudio = 0;
+    let previous = 0;
+    let gotSaved = false;
+    navigator.mediaDevices.enumerateDevices()
+    .then((devices) => {
+        for (let i = 0; i < devices.length; i++) {
+            const device = devices[i];
+            if(device.kind === "audiooutput"){
+                if(device.deviceId === settings["output"].id && !gotSaved){
+                    selectedAudio = i - previous;
+                    gotSaved = true;
+                    console.log("gotOutput: ", selectedAudio);
+                }   
+                const option = document.createElement("option");
+                option.value = device.deviceId;
+                option.innerText = device.label || 'Speaker ' + (output.length + 1);
+                output.appendChild(option);
+            }else{
+                previous++;
+            }
+        }
+        output.selectedIndex = selectedAudio;
+    })
+    .catch((err) => {
+        console.log(err)
+    })
+
     server.checked = settings["server"].enabled === "1" ? true:false
     serverstatus.innerText = settings["server"].enabled === "1" ? "enabled" : "disabled";
 
     port.value = settings["server"].port
 
-    serveradress.innerText = `http://${ip.address("Ethernet")}:${settings["server"].port}`
+    serveradress.innerText = `http://${ip.address("Ethernet") ?? ip.address()}:${settings["server"].port}`
 
     const folderLocation = fs.readFileSync(path.join(savesPath, "folder.txt"), "utf-8")
     if(folderLocation === ""){
@@ -89,6 +119,23 @@ ipcRenderer.on("savesFolder", (event, data) => {
         document.getElementById("lyrics").value = lyricsLocation;
     }
 });
+
+navigator.mediaDevices.addEventListener("devicechange", async() => {
+    const devices = await navigator.mediaDevices.enumerateDevices();
+    for (let i = 0; i < devices.length; i++) {
+        const device = devices[i];
+        if(device.kind === "audiooutput" && device.label.startsWith("Default")){
+            output[0].innerText = device.label;
+            output[0].value = device.deviceId;
+            continue;
+        }
+    }
+})
+
+output.onchange = (ev) => {
+    settings["output"].id = output[output.selectedIndex].value;
+    ipcRenderer.send("outputChange", output[output.selectedIndex].value);
+}
 
 tray.onclick = () => {
     traystatus.innerText = tray.checked ? "enabled" : "disabled";
@@ -120,6 +167,14 @@ metadata.onclick = () => {
 
 form.onsubmit = (ev) => {
     ev.preventDefault();
+    saveSettings(true);
+}
+
+exitBtn.onclick = () => {
+    saveSettings(false);
+}
+
+function saveSettings(restart = true){
     settings["tray"].status = tray.checked ? "1" : "0";
     settings["discord"].status = discord.checked ? "1" : "0";
     settings["update"].status = update.checked ? "1" : "0";
@@ -128,13 +183,13 @@ form.onsubmit = (ev) => {
     settings["search"].status = search.checked;
     settings["metadata"].status = metadata.checked;
     settings["startup"].status = startup.checked;
-    saveSettings(settings);
-}
-
-function saveSettings(settings){
 	fs.writeFile(path.join(savesPath, 'settings.json') , JSON.stringify(settings), (err) => {
 		if (err) console.error(err);
-        ipcRenderer.send("settingsChanged");
+        if(restart){
+            ipcRenderer.send("settingsChanged");
+        }else{
+            ipcRenderer.send("settingsChangedNoRestart");
+        }
         window.close();
 	})
 }

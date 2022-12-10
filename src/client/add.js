@@ -322,10 +322,10 @@ const cropMaxWidth = (image) => {
 	// standart youtube artwork width with margins from both sides is 280 + 720 + 280
 	if (imageSize.width >= 1280 && imageSize.height >= 720) {
 		return image.crop({
-			x: 280,
+			x: parseInt((imageSize.width - imageSize.height) / 2),
 			y: 0,
-			width: 720,
-			height: 720
+			width: imageSize.height,
+			height: imageSize.height
 		});
 	}
 	return image;
@@ -505,9 +505,7 @@ async function downloadAudio({
                         //    changeName(title) + ".mp3"
                         //);
 
-                        const output = execSync(`ffmpeg -i "${originalPath}" ${metadata} -b:a ${bitrate} "${outPath}"`)
-
-                        console.log(output);
+                        execSync(`ffmpeg -i "${originalPath}" ${metadata} -b:a ${bitrate} "${outPath}"`)
 
                         let fileBuffer = fs.readFileSync(outPath);
 

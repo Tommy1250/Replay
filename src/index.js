@@ -59,7 +59,7 @@ const createWindow = () => {
 	mainWindow = new BrowserWindow({
 		width: 1280,
 		height: 685,
-		minWidth: 800,
+		minWidth: 1110,
 		minHeight: 100,
 		frame: false,
 		autoHideMenuBar: true,
@@ -119,8 +119,15 @@ let tray = null;
 let settingsChanged = false;
 
 ipcMain.on("settingsChanged", (event, arg) => {
+	settings = JSON.parse(fs.readFileSync(path.join(savesPath, "settings.json"), "utf-8"))
+	mainWindow.webContents.send("settingsChanged", settings);
 	settingsChanged = true;
 });
+
+ipcMain.on("settingsChangedNoRestart", () => {
+	settings = JSON.parse(fs.readFileSync(path.join(savesPath, "settings.json"), "utf-8"))
+	mainWindow.webContents.send("settingsChanged", settings);
+})
 //app.disableHardwareAcceleration();
 /*app.commandLine.appendSwitch(
 	"js-flags",
@@ -143,12 +150,19 @@ if (!gotTheLock) {
 		if (settings["update"].status === "1") {
 			require("./functions/update")(savesPath);
 		}
-		
-		app.setLoginItemSettings({
-			openAtLogin: settings["startup"].status,
-			path: app.getPath("exe")
-		})
 
+		if(!app.isPackaged){
+			app.setLoginItemSettings({
+				openAtLogin: false,
+				path: app.getPath("exe")
+			})
+		}else{
+			app.setLoginItemSettings({
+				openAtLogin: settings["startup"].status,
+				path: app.getPath("exe")
+			})
+		}
+		
 		const menuTemplate = [{
 				label: 'File',
 				submenu: [{
@@ -319,7 +333,7 @@ if (!gotTheLock) {
 					if (!settingsWindow) {
 						settingsWindow = new BrowserWindow({
 							width: 800,
-							height: 640,
+							height: 680,
 							frame: false,
 							webPreferences: {
 								nodeIntegration: true,
@@ -356,8 +370,6 @@ if (!gotTheLock) {
 											title: 'Info',
 											message: 'Settings have not been applied.\nRestart the app at any time to apply changes.'
 										})
-										settings = JSON.parse(fs.readFileSync(path.join(savesPath, "settings.json"), "utf-8"))
-										mainWindow.webContents.send("settingsChanged", settings);
 									}
 								})
 							}
@@ -568,6 +580,11 @@ ipcMain.on("fullscreen-button-rename", () => {
 
 ipcMain.on("close-button-rename", () => {
 	renameWindow.close();
+})
+
+ipcMain.on("outputChange", (event, arg) => {
+	settings = JSON.parse(fs.readFileSync(path.join(savesPath, "settings.json"), "utf-8"));
+	mainWindow.webContents.send("outputChange", arg);
 })
 
 ipcMain.on("makeSongMenu", (event, arg) => {
@@ -1088,15 +1105,20 @@ if (settings["server"].enabled === "1") {
 		io.sockets.emit("mute", arg);
 	})
 
-	ipcMain.on("play", (event, arg) => {
+	ipcMain.on("play", () => {
 		playing = true;
 		io.sockets.emit("play");
 	});
 	
-	ipcMain.on("pause", (event, arg) => {
+	ipcMain.on("pause", () => {
 		playing = false;
 		io.sockets.emit("pause");
 	});
+
+	ipcMain.on("serverOutputChange", (event, arg) => {
+		console.log("output changed to:", arg);
+		io.sockets.emit("output-change", arg);
+	})
 
 	io.on("connection", socket => {
 		console.log(`${socket.id} just connected`)
@@ -1117,13 +1139,21 @@ if (settings["server"].enabled === "1") {
 				playlist: path.parse(fs.readFileSync(path.join(savesPath, "folder.txt"))).base,
 				number: 0
 			});
-			cb({
-				song: serverSong,
-				loop: JSON.parse(fs.readFileSync(path.join(savesPath, "settings.json"), "utf-8"))["loop"].status,
-				shuffle: JSON.parse(fs.readFileSync(path.join(savesPath, "settings.json"), "utf-8"))["shuffle"].status,
-				mute: muted,
-				play: playing
-			});
+			mainWindow.webContents.send("getOutputDevices");
+			ipcMain.on("outputDevices", (event, arg) => {
+				cb({
+					song: serverSong,
+					loop: JSON.parse(fs.readFileSync(path.join(savesPath, "settings.json"), "utf-8"))["loop"].status,
+					shuffle: JSON.parse(fs.readFileSync(path.join(savesPath, "settings.json"), "utf-8"))["shuffle"].status,
+					mute: muted,
+					play: playing,
+					output: arg
+				});
+			})
+		})
+
+		socket.on("update-output", (deviceId) => {
+			mainWindow.webContents.send("outputChange", deviceId);
 		})
 
 		socket.on("timeChange", (time) => {
