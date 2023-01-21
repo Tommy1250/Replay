@@ -477,19 +477,10 @@ navigator.mediaDevices.addEventListener("devicechange", async() => {
         for (let i = 0; i < devices.length; i++) {
             const device = devices[i];
             if(device.kind === "audiooutput" && device.deviceId === "default"){
-                player.pause();
-                player.setSinkId(device.deviceId)
-                .then(() => {
-                    console.log('Audio output device attached: ' + device.deviceId);
-                    player.play();
-                    ipcRenderer.send("serverOutputChange", ({
-                        label: device.label, 
-                        deviceId: device.deviceId
-                    }))
-                })
-                .catch(function(error) {
-                    console.error(error);
-                });
+                ipcRenderer.send("serverOutputChange", ({
+                    label: device.label, 
+                    deviceId: device.deviceId
+                }))
                 continue;
             }
         }

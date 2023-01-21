@@ -54,6 +54,11 @@ let settingsWindow;
  */
 let renameWindow;
 
+/**
+ * @type {BrowserWindow}
+ */
+let makeFolderWindow;
+
 const createWindow = () => {
 	// Create the browser window.
 	mainWindow = new BrowserWindow({
@@ -245,6 +250,37 @@ if (!gotTheLock) {
 									const menu2 = Menu.buildFromTemplate(menuTemplate);
 									Menu.setApplicationMenu(menu2);
 								}
+							}
+						}
+					},
+					{
+						label: "Add new folder",
+						click: () => {
+							if (!makeFolderWindow) {
+								makeFolderWindow = new BrowserWindow({
+									width: 600,
+									height: 77,
+									frame: false,
+									webPreferences: {
+										nodeIntegration: true,
+										contextIsolation: false
+									}
+								})
+
+								makeFolderWindow.setMenu(null);
+								makeFolderWindow.loadFile(path.join(__dirname, "client/addFolder.html"));
+								makeFolderWindow.setIcon(iconpath);
+
+								if (!app.isPackaged) {
+									makeFolderWindow.webContents.openDevTools();
+								}
+
+								makeFolderWindow.on("closed", () => {
+									makeFolderWindow.destroy();
+									makeFolderWindow = null;
+								})
+							}else{
+								makeFolderWindow.focus();
 							}
 						}
 					},
@@ -582,9 +618,38 @@ ipcMain.on("close-button-rename", () => {
 	renameWindow.close();
 })
 
+ipcMain.on("close-button-newfolder", () => {
+	makeFolderWindow.close();
+})
+
+ipcMain.on("minimise-button-newfolder", () => {
+	makeFolderWindow.minimize();
+})
+
+ipcMain.on("fullscreen-button-newfolder", () => {
+	makeFolderWindow.isMaximized() ? makeFolderWindow.restore() : makeFolderWindow.maximize();
+})
+
 ipcMain.on("outputChange", (event, arg) => {
 	settings = JSON.parse(fs.readFileSync(path.join(savesPath, "settings.json"), "utf-8"));
 	mainWindow.webContents.send("outputChange", arg);
+})
+
+ipcMain.on("makeFolder", (event, arg) => {
+	const folderName = arg.name;
+	let folder = fs.readFileSync(path.join(savesPath, "folder.txt"), "utf-8");
+
+	if (folderName === path.parse(folder).base) {
+		return dialog.showErrorBox("Name Already used", "This folder name is the same as the root folder\nPlease change it or it can cause problems.");
+	}
+
+	getGallery(folder, "utf-8")
+		.then(songs => {
+			if(songs.folders.includes(folderName)) return dialog.showErrorBox("Name Already used", "This folder name is the same as another folder\nPlease change it or it can cause problems.");
+			fs.mkdirSync(path.join(folder, folderName));
+			makeFolderWindow.close();
+			mainWindow.webContents.send("refresh");
+		})
 })
 
 ipcMain.on("makeSongMenu", (event, arg) => {

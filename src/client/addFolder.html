@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>Rename</title>
+    <style>
+        body {
+            background-color: rgb(18, 17, 17);
+            padding: .4rem;
+        }
+        
+        .bar {
+            -webkit-app-region: drag;
+            height: 25px;
+            width: 100%;
+            display: grid;
+            grid-template-columns: 1fr auto;
+            grid-template-rows: none;
+            background-color: rgb(25, 24, 24);
+        }
+
+        .no-drag {
+            -webkit-app-region: no-drag;
+        }
+
+        .icon {
+            width: 20px;
+            height: 20px;
+            object-fit: contain;
+            align-self: center;
+        }
+    </style>
+    <link rel="stylesheet" href="style.css">
+    <script src="addFolder.js" defer></script>
+</head>
+<body>
+    <div class="bar bg-opacity-50">
+        <div>
+            <p class="px-1 text-white">Name folder</p>
+        </div>
+        <div>
+            <button class="no-drag hover:bg-gray-600 bg-opacity-75 w-5 h-4 px-1" id="minimise-button"><img class="icon" src="../assets/minimise.png"></button>
+            <button class="no-drag hover:bg-gray-600 bg-opacity-75 w-5 h-4 px-1" id="fullscreen-button"><img class="icon" src="../assets/maximise.png"></button>
+            <button class="no-drag hover:bg-red-600 bg-opacity-75 w-5 h-4 px-1" id="close-button"><img class="icon" src="../assets/cross.png"></button>
+        </div>
+    </div>
+    <form id="form" class="flex flex-row">
+        <input type="text" class="text-black flex-grow-1 w-full" id="name" placeholder="input the new folder name here">
+        <button type="submit" class="px-1 bg-white border-white text-gray-700 hover:text-gray-400">Confirm</button>
+    </form>
+</body>
+</html>
