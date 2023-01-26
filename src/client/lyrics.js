@@ -53,23 +53,27 @@ closeButton.onclick = () => {
 }
 
 let editing = false;
+let oldLyrics = "";
 
 editBtn.onclick = () => {
     if(!editing){
         editing = true;
-        savebtn.disabled = true;
-        editBtn.innerText = "Save changes";
+        editBtn.innerText = "Discard changes";
         lyricsHTML.removeAttribute("readonly");
+        oldLyrics = lyricsHTML.value;
     }else{
         editing = false;
-        savebtn.disabled = false;
         editBtn.innerText = "Edit lyrics";
         lyricsHTML.setAttribute("readonly", true);
-        savelyrics();
+        discardChanges();
     }
 }
 
 savebtn.onclick = () => {
+    editing = false;
+    editBtn.innerText = "Edit lyrics";
+    lyricsHTML.setAttribute("readonly", true);
+    oldLyrics = null;
     savelyrics();
 }
 
@@ -81,6 +85,11 @@ function savelyrics() {
     }else{
         searchbar.value = "please choose a lyrics folder";
     }
+}
+
+function discardChanges() {
+    lyricsHTML.value = oldLyrics;
+    oldLyrics = null;
 }
 
 form.onsubmit = (event) => {
