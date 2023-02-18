@@ -126,7 +126,7 @@ let toDownloadVideos = new Map();
 async function download(url) {
     if (!fs.existsSync(musicFolder)) return status.innerText = "please choose a folder then restart this window to be able to download songs\n";
 
-    if (url.match(/^https?:\/\/(www.youtube.com|youtube.com)\/playlist(.*)$/)) {
+    if (url.match(/^https?:\/\/(www.youtube.com|music.youtube.com|youtube.com)\/playlist(.*)$/)) {
         const playlist = await ytfps(url)
         await fs.mkdirSync(`${musicFolder}/${changeName(playlist.title)}`);
 
