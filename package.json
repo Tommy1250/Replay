@@ -1,12 +1,13 @@
 {
   "name": "replay",
   "productName": "Replay",
-  "version": "2.3.2",
+  "version": "2.3.3",
   "description": "A Muisc App Built By Tommy",
   "main": "./src/index.js",
   "scripts": {
     "start": "electron .",
     "build": "electron-packager . Replay --overwrite --platform=win32 --icon=src/favicon.ico --out=release-builds",
+    "build-linux": "electron-packager . Replay --overwrite --platform=linux --out=release-builds",
     "css": "tailwindcss -i ./src/css/style.css -o ./src/client/style.css --watch"
   },
   "keywords": [],
@@ -30,12 +31,12 @@
     "music-metadata": "^7.12.5",
     "socket.io": "^4.5.0",
     "yt-search": "^2.10.3",
-    "ytdl-core": "^4.11.2",
+    "ytdl-core": "github:khlevon/node-ytdl-core#v4.11.3-patch.1",
     "ytfps": "^1.0.6"
   },
   "devDependencies": {
-    "electron": "18.1.0",
-    "electron-packager": "^15.5.1",
+    "electron": "^18.3.15",
+    "electron-packager": "^17.1.1",
     "tailwindcss": "^3.0.23"
   }
 }

@@ -26,7 +26,7 @@ const {
 discordLogin();
 
 const {
-	getGallery
+	getGallery, getFolders
 } = require("./gallery");
 
 /**
@@ -643,9 +643,9 @@ ipcMain.on("makeFolder", (event, arg) => {
 		return dialog.showErrorBox("Name Already used", "This folder name is the same as the root folder\nPlease change it or it can cause problems.");
 	}
 
-	getGallery(folder, "utf-8")
-		.then(songs => {
-			if(songs.folders.includes(folderName)) return dialog.showErrorBox("Name Already used", "This folder name is the same as another folder\nPlease change it or it can cause problems.");
+	getFolders(folder, "utf-8")
+		.then(folders => {
+			if(folders.includes(folderName)) return dialog.showErrorBox("Name Already used", "This folder name is the same as another folder\nPlease change it or it can cause problems.");
 			fs.mkdirSync(path.join(folder, folderName));
 			makeFolderWindow.close();
 			mainWindow.webContents.send("refresh");
@@ -735,11 +735,11 @@ ipcMain.on("makeSongMenu", (event, arg) => {
 
 	const musicFolder = fs.readFileSync(path.join(savesPath, "folder.txt"), "utf-8")
 
-	getGallery(musicFolder).then(gallery => {
+	getFolders(musicFolder).then(folders => {
 		const songPath = arg.playlist === path.parse(musicFolder).base ? path.join(musicFolder, arg.name) : path.join(musicFolder, arg.playlist, arg.name);
 
-		for (let i = 0; i < gallery.folders.length; i++) {
-			const folder = gallery.folders[i];
+		for (let i = 0; i < folders.length; i++) {
+			const folder = folders[i];
 			if(folder !== arg.playlist){
 				template[2].submenu.push({
 					label: folder,
@@ -903,9 +903,9 @@ ipcMain.on("context-downloader", (event, songNumber) => {
 		}
 	}]
 
-	getGallery(fs.readFileSync(path.join(savesPath, "folder.txt"), "utf-8")).then(gallery => {
-		for (let i = 0; i < gallery.folders.length; i++) {
-			const folder = gallery.folders[i];
+	getFolders(fs.readFileSync(path.join(savesPath, "folder.txt"), "utf-8")).then(folders => {		
+		for (let i = 0; i < folders.length; i++) {
+			const folder = folders[i];
 			template[1].submenu.push({
 				label: folder,
 				click: () => {

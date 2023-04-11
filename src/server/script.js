@@ -362,6 +362,7 @@ search.oninput = () => {
         if(latestPlaylist === "none"){
             removePlaylist();
         }else{
+            removePlaylist();
             getplaylist(latestPlaylist);
         }
     }else{

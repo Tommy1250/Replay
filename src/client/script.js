@@ -223,21 +223,29 @@ slider.addEventListener("input", () => {
 slider.addEventListener("wheel", (ev) => {
     if (ev.deltaY == -100) {
         if (player.volume < 0.98) {
-            player.volume += 0.02;
+            updatePlayer("volume", {
+                volume: player.volume + 0.02
+            });
             slider.value = player.volume * 100;
             volumeValue.innerText = `${Math.round(player.volume * 100)}%`;
         } else {
-            player.volume = 1;
+            updatePlayer("volume", {
+                volume: 1
+            });
             slider.value = player.volume * 100;
             volumeValue.innerText = `${Math.round(player.volume * 100)}%`;
         }
     } else {
         if (player.volume > 0.02) {
-            player.volume -= 0.02;
+            updatePlayer("volume", {
+                volume: player.volume - 0.02
+            });
             slider.value = player.volume * 100;
             volumeValue.innerText = `${Math.round(player.volume * 100)}%`;
         } else {
-            player.volume = 0.01;
+            updatePlayer("volume", {
+                volume: 0.01
+            });
             slider.value = player.volume * 100;
             volumeValue.innerText = `${Math.round(player.volume * 100)}%`;
         }
@@ -362,22 +370,30 @@ document.addEventListener('keydown', (event) => {
                 break;
             case "ArrowUp":
                 if (player.volume < 0.95) {
-                    player.volume += 0.05;
+                    updatePlayer("volume", {
+                        volume: player.volume + 0.05
+                    });
                     slider.value = player.volume * 100;
                     volumeValue.innerText = `${Math.round(player.volume * 100)}%`;
                 } else {
-                    player.volume = 1;
+                    updatePlayer("volume", {
+                        volume: 1
+                    });
                     slider.value = player.volume * 100;
                     volumeValue.innerText = `${Math.round(player.volume * 100)}%`;
                 }
                 break;
             case "ArrowDown":
                 if (player.volume > 0.05) {
-                    player.volume -= 0.05;
+                    updatePlayer("volume", {
+                        volume: player.volume - 0.05
+                    });
                     slider.value = player.volume * 100;
                     volumeValue.innerText = `${Math.round(player.volume * 100)}%`;
                 } else {
-                    player.volume = 0.01;
+                    updatePlayer("volume", {
+                        volume: 0.01
+                    });
                     slider.value = player.volume * 100;
                     volumeValue.innerText = `${Math.round(player.volume * 100)}%`;
                 }
@@ -920,7 +936,7 @@ function getplaylist(plname) {
     let playlistLength = 0;
     let songsCount = 0;
     for (let i = 0; i < songs.playlists[plname].length; i++) {
-        const element = songs.playlists[plname][i];
+        const songName = songs.playlists[plname][i];
         songsCount++;
 
         const btn = document.createElement("button");
@@ -929,7 +945,7 @@ function getplaylist(plname) {
         const songPhoto = document.createElement("img");
         const artist = document.createElement("p");
 
-        songname.innerText = filter(element);
+        songname.innerText = filter(songName);
         btn.style.gridTemplateColumns = "1fr auto";
         btn.appendChild(songname);
 
@@ -981,9 +997,9 @@ function getplaylist(plname) {
             });
         }
         btn.oncontextmenu = (e) => {
-            console.log("right click on " + btn.textContent);
+            console.log("right click on ", songName, i);
             ipcRenderer.send("makeSongMenu", {
-                name: element,
+                name: songName,
                 playlist: plname,
                 number: i,
                 addShow: false

@@ -31,7 +31,7 @@ async function getGallery(defolder) {
     }
 
     let mp3files = files.filter(f => f.isFile() && filter(f.name)).map(f => f.name);
-    let folders = files.filter(f => f.isDirectory()).map(f => f.name);
+    let folders = files.filter(f => f.isDirectory() && !f.name.startsWith(".")).map(f => f.name);
 
     all.folders = folders;
 
@@ -61,6 +61,19 @@ async function getGallery(defolder) {
     return all;
 }
 
+async function getFolders(defolder){
+    const files = await readdir(defolder, {
+        withFileTypes: true
+    })
+
+    let folders = files.filter(f => f.isDirectory() && !f.name.startsWith(".")).map(f => f.name);
+    const basepath = path.parse(defolder).base;
+
+    return [...folders, basepath];
+
+}
+
 module.exports = {
-    getGallery
+    getGallery,
+    getFolders
 };
