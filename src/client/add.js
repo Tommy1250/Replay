@@ -407,7 +407,7 @@ async function downloadAudio({
         return;
     }
 
-    const originalPath = path.join(thepath, changeName(title));
+    const originalPath = path.join(thepath, changeName(title) + ".temp");
     const outPath = path.join(thepath, changeName(title) + ".mp3");
 
     let bitrate = "";
