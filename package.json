@@ -1,7 +1,7 @@
 {
   "name": "replay",
   "productName": "Replay",
-  "version": "2.3.3",
+  "version": "2.4.0",
   "description": "A Muisc App Built By Tommy",
   "main": "./src/index.js",
   "scripts": {

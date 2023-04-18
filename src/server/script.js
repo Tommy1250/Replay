@@ -8,8 +8,8 @@ const pausebtn = document.getElementById("pause");
 const mutebtn = document.getElementById("mute");
 const prevbtn = document.getElementById("prev");
 const nextbtn = document.getElementById("next");
-const seek5forward = document.getElementById("seek5");
-const seek5backward = document.getElementById("seek5back");
+// const seek5forward = document.getElementById("seek5");
+// const seek5backward = document.getElementById("seek5back");
 
 const nowplaying = document.getElementById("np");
 /**
@@ -72,17 +72,17 @@ slider.addEventListener("input", () => {
     });
 })
 
-seek5forward.onclick = () => {
-    updatePlayer("seek", {
-        currentTime: 5
-    });
-}
+// seek5forward.onclick = () => {
+//     updatePlayer("seek", {
+//         currentTime: 5
+//     });
+// }
 
-seek5backward.onclick = () => {
-    updatePlayer("seek", {
-        currentTime: -5
-    });
-}
+// seek5backward.onclick = () => {
+//     updatePlayer("seek", {
+//         currentTime: -5
+//     });
+// }
 
 pausebtn.onclick = () => {
     socket.emit("pause");
@@ -213,11 +213,7 @@ socket.on("pause", () => {
     pausebtn.innerText = "Play";
 })
 
-/**
- * 
- * @param {{folders: string[], playlists: {string: string[]}}} lesongs 
- */
-function setupPlayer(lesongs) {
+function setupPlayer() {
     socket.emit("get-latest", async cb => {
         current = cb.song;
         let volume = 0.5; // default volume
@@ -472,7 +468,7 @@ function makegallery(lesongs) {
     }
 
     if (!galleryDone) {
-        setupPlayer(lesongs);
+        setupPlayer();
         galleryDone = true;
     }
 }

@@ -1118,6 +1118,8 @@ if (settings["server"].enabled === "1") {
 	let muted = false;
 	let playing = false;
 
+	let addUsers = 0;
+
 	appExpress.get("/", (req, res) => {
 		res.sendFile(path.join(__dirname, "server/index.html"));
 	})
@@ -1134,6 +1136,18 @@ if (settings["server"].enabled === "1") {
 		res.sendFile(path.join(__dirname, "favicon.ico"))
 	})
 
+	appExpress.get("/scrollbar.css", (req, res) => {
+		res.sendFile(path.join(__dirname, "client/scrollbar.css"));
+	})
+
+	appExpress.get("/add", (req, res) => {
+		res.sendFile(path.join(__dirname, "server/add.html"));
+	})
+
+	appExpress.get("/add.js", (req, res) => {
+		res.sendFile(path.join(__dirname, "server/add.js"))
+	})
+
 	appExpress.get("/volume", async (req, res) => {
 		const volumefile = fs.readFileSync(path.join(savesPath, "volume.txt"), "utf-8");
 		const volume = parseFloat(volumefile);
@@ -1143,6 +1157,22 @@ if (settings["server"].enabled === "1") {
 	})
 
 	let serverSong = JSON.parse(fs.readFileSync(path.join(savesPath, "latest.json"), "utf8"));
+
+	ipcMain.on("addStatus", (event, arg) => {
+		io.sockets.volatile.emit("status", arg);
+	})
+
+	ipcMain.on("percent", (event, arg) => {
+		io.sockets.volatile.emit("percent", arg);
+	})
+
+	ipcMain.on("resetResults", () => {
+		io.sockets.emit("resetResults");
+	})
+
+	ipcMain.on("searchResult", (event, arg) => {
+		io.sockets.emit("searchResult", arg);
+	})
 
 	ipcMain.on("changeServer", (event, arg) => {
 		serverSong = arg.current;
@@ -1187,6 +1217,56 @@ if (settings["server"].enabled === "1") {
 
 	io.on("connection", socket => {
 		console.log(`${socket.id} just connected`)
+
+		if(socket.handshake?.auth?.site === "add"){
+			console.log("A user connected from the add site. . . spawning a new add window if none");
+			
+			if (!addWindow) {
+				addWindow = new BrowserWindow({
+					width: 800,
+					height: 600,
+					frame: false,
+					webPreferences: {
+						contextIsolation: false,
+						nodeIntegrationInWorker: true,
+						nodeIntegration: true
+						//preload: path.join(__dirname, "functions", "preload.js")
+					},
+					show: false
+				});
+	
+				if (!app.isPackaged) {
+					addWindow.webContents.openDevTools();
+				}
+				addWindow.loadFile(path.join(__dirname, "client/add.html"));
+				addWindow.setMenu(null);
+				addWindow.setIcon(iconpath);
+				addWindow.on("closed", () => {
+					//emit an event to the main window
+					mainWindow.webContents.send("refresh")
+	
+					addWindow.destroy();
+					addWindow = null;
+				});
+	
+				console.log("Spawned a new add window");
+			}
+			addUsers++;
+			console.log(`Current users on add site: ${addUsers}`);
+		}
+
+		socket.on("search", (url) => {
+			addWindow.webContents.send("search", url);
+		})
+
+		socket.on("getFolders", (cb) => {
+			getFolders(fs.readFileSync(path.join(savesPath, "folder.txt"), "utf-8"))
+				.then(folders => cb(folders));
+		})
+
+		socket.on("download", (index, config) => {
+			addWindow.webContents.send("download-to", {path: config, number: index})
+		})
 
 		socket.on("get-gallery", (cb) => {
 			getGallery(fs.readFileSync(path.join(savesPath, "folder.txt"), "utf-8"))
@@ -1260,6 +1340,14 @@ if (settings["server"].enabled === "1") {
 
 		socket.on("disconnect", () => {
 			console.log(`${socket.id} disconnected`);
+			if(socket.handshake?.auth?.site === "add"){
+				addUsers--;
+				console.log(`A user from the add site disconnected\nCurrent number of users: ${addUsers}`);
+				if (addUsers === 0){
+					addWindow.close();
+					console.log("Add window closed due to no users currenly using it");
+				}
+			}
 		})
 	})
 

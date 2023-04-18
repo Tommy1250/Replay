@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Replay downloader</title>
+    <link rel="icon" href="/favicon.ico" type="image/ico">
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="/add.js" defer type="module"></script>
+    <link rel="stylesheet" href="/style.css">
+    <link rel="stylesheet" href="/scrollbar.css">
+</head>
+<style>
+    body {
+        background-color: rgb(18, 17, 17);
+        color: white;
+    }
+
+    img {
+        width: 300px;
+        height: 200px;
+        object-fit: contain;
+    }
+
+    .scroll-alone {
+        overflow: auto;
+    }
+
+    /* .bar {
+        height: 25px;
+        width: 100%;
+        display: grid;
+        grid-template-rows: none;
+        justify-content: center;
+        background-color: rgb(25, 24, 24);
+    } */
+</style>
+
+<body>
+    <div class="p-1">
+        <form id="form">
+            <input type="text" id="yt-link" required placeholder="input a name, url or playlist url" class="text-black" autocomplete="off">
+            <!-- <label for="folders">Select folder</label> -->
+            <!-- <select id="folders"></select> -->
+            <button id="downbtn"
+                class="px-3 py-[0.7] text-sm text-blue-600 font-semibold rounded-full border border-blue-200 hover:text-white hover:bg-blue-600 hover:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2">Search</button>
+            <select id="folder" class="text-white bg-zinc-800 border-none"></select>
+            <p id="percent"></p>
+        </form>
+        <div class="p-3">
+            <p id="status"></p>
+            <ul id="list" style="list-style-type: decimal; padding-right: 2px;"></ul>
+        </div>
+    </div>
+    <!-- <div class="bg-opacity-50 fixed top-[0] bar">
+        <p class="px-1" id="report">Done: 0, Error: 0, Total: 0, of: 0</p>
+    </div> -->
+</body>
+
+</html>

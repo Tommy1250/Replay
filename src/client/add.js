@@ -33,7 +33,8 @@ const {
     shell,
     ipcRenderer,
     nativeImage,
-    clipboard
+    clipboard,
+    NativeImage
 } = require("electron");
 
 const fs = require("fs");
@@ -49,7 +50,7 @@ const videoFinder = async (query) => {
 }
 
 const {
-    getGallery
+    getFolders
 } = require("../gallery");
 
 const lyricsFinder = require("lyrics-finder");
@@ -109,10 +110,10 @@ ipcRenderer.on("savesFolder", (event, data) => {
     savesPath = data;
     musicFolder = fs.readFileSync(path.join(savesPath, "folder.txt"), "utf-8");
     settings = JSON.parse(fs.readFileSync(path.join(savesPath, "settings.json"), "utf-8"));
-    getGallery(musicFolder).then(library => {
-        folders = library.folders;
-        folderTo.innerHTML = library.folders.map(folder => `<option>${folder}</option>`).join("\n");
-        folderTo.selectedIndex = folders.indexOf(path.parse(musicFolder).base);
+    getFolders(musicFolder).then(deFolders => {
+        folders = deFolders;
+        folderTo.innerHTML = deFolders.map(folder => `<option>${folder}</option>`).join("\n");
+        folderTo.selectedIndex = deFolders.indexOf(path.parse(musicFolder).base);
     })
 });
 
@@ -129,7 +130,7 @@ let toDownloadVideos = new Map();
  * @returns 
  */
 async function download(url) {
-    if (!fs.existsSync(musicFolder)) return status.innerText = "please choose a folder then restart this window to be able to download songs\n";
+    if (!fs.existsSync(musicFolder)) return addStatus("please choose a folder then restart this window to be able to download songs");
 
     if (url.match(/^https?:\/\/(www.youtube.com|music.youtube.com|youtube.com)\/playlist(.*)$/)) {
         const playlist = await ytfps(url)
@@ -152,7 +153,7 @@ async function download(url) {
                 }, true, changeName(playlist.title));
             } catch (error) {
                 console.warn(`an error happened\n${error}`);
-                status.innerText = `an error happened\n${error}\n`;
+                addStatus(`an error happened\n${error}`);
                 errored++;
                 report.innerText = `Done: ${downloaded}, Error: ${errored}, Total: ${downloaded + errored}, of: ${toDownload}`;
             }
@@ -174,6 +175,7 @@ async function download(url) {
     } else {
         const videos = await videoFinder(url);
         list.innerHTML = "";
+        ipcRenderer.send("resetResults");
 
         for (let i = 0; i < videos.length; i++) {
             const video = videos[i];
@@ -221,10 +223,10 @@ async function download(url) {
                 downloadAudio({
                     url: video.url,
                     title: video.title,
-                    thumbnail: video.image,
+                    thumbnail: video.thumbnail,
                     artist: video.author.name,
                     originalTitle: video.title,
-                    album: video.id
+                    album: video.videoId
                 })
             }
 
@@ -239,10 +241,10 @@ async function download(url) {
                 downloadAudio({
                     url: video.url,
                     title: video.title,
-                    thumbnail: video.image,
+                    thumbnail: video.thumbnail,
                     artist: video.author.name,
                     originalTitle: video.title,
-                    album: video.id
+                    album: video.videoId
                 })
             }
 
@@ -276,15 +278,28 @@ async function download(url) {
             li.appendChild(br);
 
             list.appendChild(li);
+
+            ipcRenderer.send("searchResult", {
+                title: video.title,
+                timestamp: video.timestamp,
+                thumbnail: video.thumbnail,
+                i
+            });
         }
+
+        
     }
 }
 
+ipcRenderer.on("search", (event, arg) => {
+    download(arg);
+})
+
 exec("ffmpeg -version", (error, stdout, stderr) => {
     if (stderr) {
-        status.innerText += "ffmpeg not found downloading without conversion\n"
+        addStatus("ffmpeg not found downloading without conversion");
     } else {
-        status.innerText += "ffmpeg found downloading with conversion and metadata\n"
+        addStatus("ffmpeg found downloading with conversion and metadata");
     }
 })
 
@@ -391,7 +406,7 @@ async function downloadAudio({
         thepath = playlist ? path.join(musicFolder, plname) : path.join(musicFolder, pathConfig);
     }
 
-    if (!playlist) status.innerText += `Downloading to ${pathConfig}...\n`;
+    if (!playlist) addStatus(`Downloading to ${pathConfig}...`);
     let videoReadableStream;
     try {
         videoReadableStream = ytdl(url, {
@@ -401,7 +416,7 @@ async function downloadAudio({
             requestOptions: { maxRetries: 3 },
         });
     } catch (err) {
-        status.innerText += `An error happened:\n${err}\n`;
+        addStatus(`An error happened:\n${err}`);
         errored++;
         report.innerText = `Done: ${downloaded}, Error: ${errored}, Total: ${downloaded + errored}, of: ${toDownload}`;
         return;
@@ -428,6 +443,7 @@ async function downloadAudio({
                     percent.innerText += `${title}: ${videoProgress}%\n`
                 })
             }
+            ipcRenderer.send("percent", percent.innerText);
         })
         .on("info", (info, format) => {
             console.log(
@@ -439,7 +455,7 @@ async function downloadAudio({
             bitrate = `${format.audioBitrate}k`
         })
         .on("error", err => {
-            status.innerText += `An error happened while downloading: ${title}\n${err.name}: ${err.message}\n`;
+            addStatus(`An error happened while downloading: ${title}\n${err.name}: ${err.message}`);
             errored++;
             report.innerText = `Done: ${downloaded}, Error: ${errored}, Total: ${downloaded + errored}, of: ${toDownload}`;
         })
@@ -493,13 +509,13 @@ async function downloadAudio({
                     } catch (error) {
                         console.log(e);
                         errored++;
-                        status.innerText += e + "\n";
+                        addStatus(e);
                         report.innerText = `Done: ${downloaded}, Error: ${errored}, Total: ${downloaded + errored}, of: ${toDownload}`;
                     } finally {
                         downloaded++;
                         report.innerText = `Done: ${downloaded}, Error: ${errored}, Total: ${downloaded + errored}, of: ${toDownload}`;
                         fs.rmSync(originalPath)
-                        status.innerText += `${title} has been downloaded\n`
+                        addStatus(`${title} has been downloaded`);
                         toDownloadVideos.clear();
                         if (settings["search"].status)
                             searchLyrics(originalTitle, fs.readFileSync(path.join(savesPath, "lyrics.txt"), "utf-8"));
@@ -515,7 +531,7 @@ async function downloadAudio({
 
                         fs.writeFileSync(originalPath, buffer)
 
-                        status.innerText += `converting ${title}\n`
+                        addStatus(`converting ${title}`);
                         const metadata = `-metadata title="${changeName(originalTitle)}" -metadata artist="${artist}"`
                         //await ffmpeg.run(
                         //    "-i",
@@ -564,13 +580,13 @@ async function downloadAudio({
                     } catch (e) {
                         console.log(e);
                         errored++;
-                        status.innerText += e + "\n";
+                        addStatus(e);
                         report.innerText = `Done: ${downloaded}, Error: ${errored}, Total: ${downloaded + errored}, of: ${toDownload}`;
                     } finally {
                         downloaded++;
                         report.innerText = `Done: ${downloaded}, Error: ${errored}, Total: ${downloaded + errored}, of: ${toDownload}`;
                         fs.rmSync(originalPath)
-                        status.innerText += `${title} has been downloaded\n`
+                        addStatus(`${title} has been downloaded`);
                         toDownloadVideos.clear();
                         if (settings["search"].status)
                             searchLyrics(originalTitle, fs.readFileSync(path.join(savesPath, "lyrics.txt"), "utf-8"));
@@ -582,21 +598,26 @@ async function downloadAudio({
 
 function searchLyrics(title, lyricsFolder) {
     console.log(`searching for lyrics for ${title}`);
-    status.innerText += `searching for lyrics for ${title}\n`;
+    addStatus(`searching for lyrics for ${title}`);
 
     lyricsFinder("", title)
         .then(lyrics => {
             if (lyrics) {
                 console.log(`found lyrics for ${title}`);
-                status.innerText += `found lyrics for ${title}\n`;
+                addStatus(`found lyrics for ${title}`);
                 fs.writeFileSync(path.join(lyricsFolder, `${changeName(title)}.txt`), lyrics);
-                status.innerText += `lyrics for ${title} was saved\n`;
+                addStatus(`lyrics for ${title} was saved`);
             } else {
                 console.log(`couldn't find lyrics for ${title}`);
-                status.innerText += `couldn't find lyrics for ${title}\n`;
+                addStatus(`couldn't find lyrics for ${title}`);
             }
         }).catch(err => {
             console.error(err);
-            status.innerText += `${err}\n`;
+            addStatus(err);
         })
+}
+
+function addStatus(statement) {
+    status.innerText += statement + "\n";
+    ipcRenderer.send("addStatus", statement);
 }
