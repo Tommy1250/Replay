@@ -16,7 +16,7 @@ const report = document.getElementById("report");
 
 //const Mutex = require("async-mutex").Mutex;
 //const FFmpeg = require("@ffmpeg/ffmpeg/dist/ffmpeg.min");
-const ytdl = require("ytdl-core");
+const ytdl = require("@distube/ytdl-core");
 const ID3Writer = require("browser-id3-writer");
 
 //const {
