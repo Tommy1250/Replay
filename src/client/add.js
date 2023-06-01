@@ -292,7 +292,9 @@ async function download(url) {
 }
 
 ipcRenderer.on("search", (event, arg) => {
-    download(arg);
+    // console.log(arg);
+    pathConfig = arg.pathConfig;
+    download(arg.url);
 })
 
 exec("ffmpeg -version", (error, stdout, stderr) => {
@@ -589,14 +591,17 @@ async function downloadAudio({
                         addStatus(`${title} has been downloaded`);
                         toDownloadVideos.clear();
                         if (settings["search"].status)
-                            searchLyrics(originalTitle, fs.readFileSync(path.join(savesPath, "lyrics.txt"), "utf-8"));
+                            if(!playlist)
+                                searchLyrics(originalTitle, fs.readFileSync(path.join(savesPath, "lyrics.txt"), "utf-8"));
+                            else
+                                searchLyrics(originalTitle, fs.readFileSync(path.join(savesPath, "lyrics.txt"), "utf-8"), title)
                     }
                 }
             });
         })
 }
 
-function searchLyrics(title, lyricsFolder) {
+function searchLyrics(title, lyricsFolder, fileTitle) {
     console.log(`searching for lyrics for ${title}`);
     addStatus(`searching for lyrics for ${title}`);
 
@@ -605,7 +610,7 @@ function searchLyrics(title, lyricsFolder) {
             if (lyrics) {
                 console.log(`found lyrics for ${title}`);
                 addStatus(`found lyrics for ${title}`);
-                fs.writeFileSync(path.join(lyricsFolder, `${changeName(title)}.txt`), lyrics);
+                fs.writeFileSync(path.join(lyricsFolder, fileTitle ? `${changeName(fileTitle)}.txt` : `${changeName(title)}.txt`), lyrics);
                 addStatus(`lyrics for ${title} was saved`);
             } else {
                 console.log(`couldn't find lyrics for ${title}`);

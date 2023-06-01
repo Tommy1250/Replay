@@ -29,8 +29,6 @@ function downloadSong() {
     download(url);
 }
 
-//TODO make a function to get the folders
-
 let pathConfig = "music";
 // let toDownload = 0;
 // let downloaded = 0;
@@ -42,7 +40,7 @@ let pathConfig = "music";
  * @returns 
  */
 async function download(url) {
-    socket.emit("search", url);
+    socket.emit("search", url, pathConfig);
 }
 
 socket.on("resetResults", (video) => {
@@ -73,7 +71,7 @@ socket.on("searchResult", (video) => {
     img.onclick = () => {
         list.innerHTML = "";
 
-        toDownload += 1;
+        // toDownload += 1;
         
         socket.emit("download", video.i, pathConfig);
     }
@@ -83,7 +81,7 @@ socket.on("searchResult", (video) => {
     btn.onclick = () => {
         list.innerHTML = "";
 
-        toDownload += 1;
+        // toDownload += 1;
         
         socket.emit("download", video.i, pathConfig);
     }

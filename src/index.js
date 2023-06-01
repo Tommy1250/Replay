@@ -1232,7 +1232,7 @@ if (settings["server"].enabled === "1") {
 						nodeIntegration: true
 						//preload: path.join(__dirname, "functions", "preload.js")
 					},
-					show: false
+					// show: false
 				});
 	
 				if (!app.isPackaged) {
@@ -1255,8 +1255,8 @@ if (settings["server"].enabled === "1") {
 			console.log(`Current users on add site: ${addUsers}`);
 		}
 
-		socket.on("search", (url) => {
-			addWindow.webContents.send("search", url);
+		socket.on("search", (url, pathConfig) => {
+			addWindow.webContents.send("search", {url, pathConfig});
 		})
 
 		socket.on("getFolders", (cb) => {
