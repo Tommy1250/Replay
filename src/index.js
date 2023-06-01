@@ -1232,7 +1232,7 @@ if (settings["server"].enabled === "1") {
 						nodeIntegration: true
 						//preload: path.join(__dirname, "functions", "preload.js")
 					},
-					// show: false
+					show: false
 				});
 	
 				if (!app.isPackaged) {
