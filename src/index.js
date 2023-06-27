@@ -714,6 +714,12 @@ ipcMain.on("makeSongMenu", (event, arg) => {
 			submenu: []
 		},
 		{
+			label: "Show in folder",
+			click: () => {
+				showSong(arg.name, arg.playlist);
+			}
+		},
+		{
 			label: "Delete",
 			click: () => {
 				const dialogOpts = {
@@ -1035,6 +1041,21 @@ function deleteSong(songName, playlistName) {
 				}
 			}
 		}
+	}
+}
+
+/**
+ * 
+ * @param {string} songName 
+ * @param {string} playlistName 
+ */
+function showSong(songName, playlistName) {
+	let folder = fs.readFileSync(path.join(savesPath, "folder.txt"), "utf-8");
+
+	if (playlistName === path.parse(folder).base) {
+		shell.showItemInFolder(path.join(folder, songName));
+	} else {
+		shell.showItemInFolder(path.join(folder, playlistName, songName));
 	}
 }
 
