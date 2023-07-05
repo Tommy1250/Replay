@@ -1,7 +1,7 @@
 {
   "name": "replay",
   "productName": "Replay",
-  "version": "2.4.0",
+  "version": "2.4.1",
   "description": "A Muisc App Built By Tommy",
   "main": "./src/index.js",
   "scripts": {
@@ -20,7 +20,7 @@
     "url": "https://github.com/Tommy1250/Replay"
   },
   "dependencies": {
-    "@distube/ytdl-core": "^4.11.9",
+    "@distube/ytdl-core": "^4.11.10",
     "axios": "^0.27.2",
     "browser-id3-writer": "^4.4.0",
     "discord-rpc": "^4.0.1",
