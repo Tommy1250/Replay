@@ -41,8 +41,8 @@ function discordLogin(){
 function changeActivity(songname, playlist) {
     if (activate === "1") {
         const activity = {
-            state: `${songname.replace(".mp3", "").replace(".flac", "")}`,
-            details: `${playlist}`,
+            state: "Listening on Replay",
+            details: songname,
             largeImageKey: "discord",
             instance: true
         };

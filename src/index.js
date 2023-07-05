@@ -1110,7 +1110,7 @@ ipcMain.on("change", (event, arg) => {
 
 ipcMain.on("play", (event, arg) => {
 	playing = true;
-	changeActivity(arg.name, arg.playlist);
+	changeActivity(arg.name);
 });
 
 ipcMain.on("pause", (event, arg) => {
@@ -1195,9 +1195,9 @@ if (settings["server"].enabled === "1") {
 		io.sockets.emit("searchResult", arg);
 	})
 
-	ipcMain.on("changeServer", (event, arg) => {
-		serverSong = arg.current;
-		io.sockets.emit("changeSong", arg.current);
+	ipcMain.on("changeCurrent", (event, arg) => {
+		serverSong = arg;
+		io.sockets.emit("changeSong", arg);
 	});
 
 	ipcMain.on("loopDone", (event, arg) => {
@@ -1301,10 +1301,10 @@ if (settings["server"].enabled === "1") {
 		})
 
 		socket.on("get-latest", (cb) => {
-			if (!serverSong) return cb({
-				playlist: path.parse(fs.readFileSync(path.join(savesPath, "folder.txt"))).base,
+			if (!serverSong) serverSong = {
+				playlist: path.parse(fs.readFileSync(path.join(savesPath, "folder.txt"), "utf8")).base,
 				number: 0
-			});
+			};
 			mainWindow.webContents.send("getOutputDevices");
 			ipcMain.on("outputDevices", (event, arg) => {
 				cb({

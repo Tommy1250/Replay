@@ -1,5 +1,5 @@
 /**
- * @type {{folders: string[], playlists: {string: string[]}}}
+ * @type {{folders: string[], playlists: {string: {name: string, location: string}[]}}}
  */
 let songs;
 
@@ -60,8 +60,6 @@ const filter = (file) => {
     return file.replace(".mp3", "").replace(".flac", "").replace(".m4a", "").replace(".wav", "").replace(".ogg", "")
 }
 
-let played = [];
-
 let galleryDone = false;
 let firstTime = true;
 
@@ -79,15 +77,23 @@ const {
 
 const path = require("path");
 
-let current = {
-    number: 0,
-    playlist: "random"
-};
+let current = 0;
+let currentInQueue = 0;
+let diffence = 0;
 
 let latestPlaylist = "";
 
 let playlistshtml = [];
 let nodes = [];
+
+/**
+ * @type {{playlistName: string, songs: {location: string, name: string, out?: boolean}[]}}
+ */
+let queue = {};
+/**
+ * @type {number[]}
+ */
+let shuffleQueue = [];
 
 let doLoop = 0;
 let savesPath = "";
@@ -131,10 +137,9 @@ ipcRenderer.on("pause", () => {
 ipcRenderer.on("folder", (event, arg) => {
     folder = arg;
     fs.writeFileSync(path.join(savesPath, "folder.txt"), folder);
-    current = {
-        number: 0,
-        playlist: path.parse(folder).base
-    }
+    current = 0;
+    currentInQueue = 0;
+    diffence = 0;
     makegallery();
     setTimeout(() => {
         getplaylist(path.parse(folder).base)
@@ -155,9 +160,15 @@ ipcRenderer.on("prev", () => {
 });
 
 ipcRenderer.on("change", (event, arg) => {
-    current = arg;
+    currentInQueue = arg.number;
+    if(queue.playlistName !== arg.playlist || queue.songs.length !== songs.playlists[plname].length){
+        queue.playlistName = arg.playlist;
+        queue.songs = [...songs.playlists[arg.playlist]];
+        diffence = 0;
+        shuffleTheQueue();
+    }
     updatePlayer("change", {
-        songNumber: current
+        songNumber: currentInQueue
     });
 });
 
@@ -312,6 +323,23 @@ shuffle.onclick = () => {
     settings["shuffle"].status = shuffle.checked
     ipcRenderer.send("shuffleclick", shuffle.checked);
 
+    if (shuffle.checked) {
+        let songsLength = queue.songs.length;
+        let unShuffled = [];
+        for (let i = 0; i < songsLength; i++) {
+            unShuffled.push(i);
+        }
+        for (let i = unShuffled.length - 1; i > 1; i--) {
+            let j = 1 + Math.floor(Math.random() * i);
+            [unShuffled[i], unShuffled[j]] = [unShuffled[j], unShuffled[i]];
+        }
+        shuffleQueue = unShuffled;
+    }else{
+        currentInQueue = current;
+    }
+
+    console.log(shuffleQueue);
+
     fs.writeFileSync(path.join(savesPath, "settings.json"), JSON.stringify(settings));
 }
 
@@ -428,7 +456,7 @@ ipcRenderer.on("stream", (event, arg) => {
 
 /**
  * @param {"change" | "volume" | "seek"} event
- * @param {{songNumber?: {number: number, playlist: string}, currentTime?: number, volume?: number}} param1
+ * @param {{songNumber?: number, currentTime?: number, volume?: number}} param1
  */
 function updatePlayer(event, {
     songNumber,
@@ -437,16 +465,27 @@ function updatePlayer(event, {
 }) {
     switch (event) {
         case "change":
-            if (current.playlist !== songNumber.playlist) played = [];
-            current = songNumber
-            nowplaying.innerText = filter(songs.playlists[current.playlist][current.number]);
-            nowplaying.onclick = () => {
-                if (current.playlist !== currentPlaylist.innerText) getplaylist(current.playlist);
-                nodes[current.number].focus();
+            currentInQueue = songNumber;
+            if(shuffle.checked && !queue.songs[shuffleQueue[currentInQueue]].out){
+                current = shuffleQueue[currentInQueue];
+            }else{
+                current = currentInQueue - diffence;
             }
 
-            if (current.playlist === path.parse(folder).base) {
-                let songPath = path.join(folder, songs.playlists[current.playlist][current.number]);
+            if (queue.songs[currentInQueue].out) {
+                nowplaying.onclick = () => {
+                    shell.showItemInFolder(queue.songs[currentInQueue].location);
+                }
+            } else {
+                nowplaying.onclick = () => {
+                    if (queue.playlistName !== currentPlaylist.innerText) getplaylist(queue.playlistName);
+                    nodes[current].focus();
+                }
+            }
+
+            if (shuffle.checked) {
+                nowplaying.innerText = filter(queue.songs[shuffleQueue[currentInQueue]].name);
+                let songPath = queue.songs[shuffleQueue[currentInQueue]].location;
                 player.src = songPath;
                 if (settings["metadata"].status) {
                     musicMetadata.parseFile(songPath).then(data => {
@@ -459,7 +498,8 @@ function updatePlayer(event, {
                     })
                 }
             } else {
-                let songPath = path.join(folder, current.playlist, songs.playlists[current.playlist][current.number]);
+                nowplaying.innerText = filter(queue.songs[currentInQueue].name);
+                let songPath = queue.songs[currentInQueue].location;
                 player.src = songPath;
                 if (settings["metadata"].status) {
                     musicMetadata.parseFile(songPath).then(data => {
@@ -476,27 +516,31 @@ function updatePlayer(event, {
             if (!firstTime) player.play();
             else firstTime = false;
 
-            if (fs.existsSync(`${lyricsFolder}/${filter(songs.playlists[current.playlist][current.number])}.txt`)) {
-                const dalyrics = fs.readFileSync(`${lyricsFolder}/${filter(songs.playlists[current.playlist][current.number])}.txt`, "utf-8");
+            if (fs.existsSync(path.join(lyricsFolder, `${filter(queue.songs[currentInQueue].name)}.txt`))) {
+                const dalyrics = fs.readFileSync(path.join(lyricsFolder, `${filter(queue.songs[currentInQueue].name)}.txt`), "utf-8");
                 ipcRenderer.send("updateLyrics", {
-                    name: filter(songs.playlists[current.playlist][current.number]),
+                    name: filter(queue.songs[currentInQueue].name),
                     lyrics: dalyrics
                 });
                 lyricsHTML.innerText = dalyrics;
             } else {
                 ipcRenderer.send("updateLyrics", {
-                    name: filter(songs.playlists[current.playlist][current.number]),
+                    name: filter(queue.songs[currentInQueue].name),
                     lyrics: "Song doesn't have lyrics!"
                 });
                 lyricsHTML.innerText = "Song doesn't have lyrics!";
             }
 
-            fs.writeFileSync(path.join(savesPath, "latest.json"), JSON.stringify(current));
+            fs.writeFileSync(path.join(savesPath, "latest.json"), JSON.stringify({
+                number: current,
+                playlist: queue.playlistName
+            }));
 
             //ipcRenderer.send("change", {name: songs.playlists[current.playlist][current.number], playlist: current.playlist});
 
-            ipcRenderer.send("changeServer", {
-                current
+            ipcRenderer.send("changeCurrent", {
+                number: current,
+                playlist: queue.playlistName
             });
             break;
         case "volume":
@@ -596,57 +640,53 @@ player.onpause = () => {
 
 player.onplay = () => {
     ipcRenderer.send("play", {
-        name: songs.playlists[current.playlist][current.number],
-        playlist: current.playlist
+        name: filter(queue.songs[currentInQueue].name)
     });
     pause.innerText = "Pause";
 }
 
+function shuffleTheQueue() {
+    if (shuffle.checked) {
+        let songsLength = queue.songs.length;
+        let unShuffled = [];
+        for (let i = 0; i < songsLength; i++) {
+            unShuffled.push(i);
+        }
+        for (let i = unShuffled.length - 1; i > 1; i--) {
+            let j = 1 + Math.floor(Math.random() * i);
+            [unShuffled[i], unShuffled[j]] = [unShuffled[j], unShuffled[i]];
+        }
+        shuffleQueue = unShuffled;
+    }
+}
+
 player.onended = () => {
-    if (!played.includes(current.number)) played.push(current.number);
-
+    currentInQueue++;
     if (!shuffle.checked) {
-
-        current.number++;
-
         if (doLoop === 1) {
-            current.number--;
-        } else if (!songs.playlists[current.playlist][current.number]) {
+            currentInQueue--;
+        } else if (!queue.songs[currentInQueue]) {
             if (doLoop === 2) {
-                current.number = 0;
-                played = [];
+                currentInQueue = 0;
             } else {
-                current.number--;
-                played = [];
+                currentInQueue--;
                 return
             }
         }
     } else {
-        const makeNumber = () => {
-            return Math.floor(Math.random() * songs.playlists[current.playlist].length - 1);
-        }
-
-        let number;
-
-        if (played.length === songs.playlists[current.playlist].length) {
+        console.log(currentInQueue, queue.songs.length);
+        if (currentInQueue === queue.songs.length) {
             if (doLoop === 2) {
-                current.number = 0;
-                played = [];
+                currentInQueue = 0;
             } else {
-                played = [];
+                currentInQueue--;
                 return
             }
-        } else {
-            do {
-                number = makeNumber()
-            } while (played.includes(number) && number < 0);
-            current.number = number;
         }
     }
 
-    console.log(played)
     updatePlayer("change", {
-        songNumber: current
+        songNumber: currentInQueue
     });
 }
 
@@ -669,12 +709,11 @@ function searchPlaylist(searchValue) {
 
             for (let j = 0; j < songs.playlists[songsFolder].length; j++) {
                 /**
-                 * @type {string}
+                 * @type {{name: string, location: string}}
                  */
                 const song = songs.playlists[songsFolder][j];
 
-                if (song.toLowerCase().includes(searchValue.toLowerCase())) {
-
+                if (song.name.toLowerCase().includes(searchValue.toLowerCase())) {
                     songsConut++;
                     const btn = document.createElement("button");
                     const songname = document.createElement("p");
@@ -682,18 +721,12 @@ function searchPlaylist(searchValue) {
                     const songPhoto = document.createElement("img");
                     const artist = document.createElement("p");
 
-                    songname.innerText = filter(song);
+                    songname.innerText = filter(song.name);
                     btn.style.gridTemplateColumns = "1fr auto";
                     btn.appendChild(songname);
 
                     if (settings["metadata"].status) {
-                        let songPath = ""
-
-                        if (songsFolder === path.parse(folder).base) {
-                            songPath = path.join(folder, songs.playlists[songsFolder][j]);
-                        } else {
-                            songPath = path.join(folder, songsFolder, songs.playlists[songsFolder][j]);
-                        }
+                        let songPath = song.location;
 
                         musicMetadata.parseFile(songPath).then(data => {
                             if (data.common.picture) {
@@ -722,22 +755,29 @@ function searchPlaylist(searchValue) {
                     }
 
                     btn.onclick = () => {
+                        if (queue.playlistName !== songsFolder || queue.songs.length !== songs.playlists[songsFolder].length) {
+                            diffence = 0;
+                            queue.playlistName = plname;
+                            queue.songs = [...songs.playlists[plname]];
+                            shuffleTheQueue();
+                        }
+                        shuffleTheQueue();
                         updatePlayer("change", {
-                            songNumber: {
-                                number: j,
-                                playlist: songsFolder
-                            }
+                            songNumber: j
                         });
                     }
+
                     btn.oncontextmenu = (e) => {
                         console.log("right click on " + btn.textContent);
                         ipcRenderer.send("makeSongMenu", {
-                            name: song,
+                            name: song.name,
                             playlist: songsFolder,
+                            location: song.location,
                             number: j,
                             addShow: true
                         });
                     }
+
                     btn.id = "removable";
                     btn.className = "grid px-2 text-left py-1 w-full text-sm text-gray-300 font-medium rounded-md hover:text-white hover:bg-white hover:bg-opacity-20 hover:border-transparent focus:border"
                     htmlsongs.appendChild(btn);
@@ -764,77 +804,53 @@ ipcRenderer.on("showSong", (event, data) => {
 })
 
 function nextSong() {
-    if (!played.includes(current.number)) played.push(current.number);
-
+    currentInQueue++;
     if (!shuffle.checked) {
-        current.number++;
-
-        if (!songs.playlists[current.playlist][current.number]) {
+        if (!queue.songs[currentInQueue]) {
             if (doLoop === 2) {
-                current.number = 0;
-                played = [];
+                currentInQueue = 0;
             } else {
-                current.number--;
-                played = [];
+                currentInQueue--;
                 return
             }
         }
     } else {
-        const makeNumber = () => {
-            return parseInt(Math.random() * songs.playlists[current.playlist].length);
-        }
-
-        let number;
-
-        console.log(played.length, songs.playlists[current.playlist].length);
-        if (played.length === songs.playlists[current.playlist].length) {
+        console.log(currentInQueue, queue.songs.length);
+        if (currentInQueue === queue.songs.length) {
             if (doLoop === 2) {
-                current.number = 0;
-                played = [];
+                currentInQueue = 0;
             } else {
-                played = [];
+                currentInQueue--;
                 return
             }
-        } else {
-            do {
-                number = makeNumber()
-            } while (played.includes(number));
-            current.number = number;
         }
     }
 
-    console.log(played)
     updatePlayer("change", {
-        songNumber: current
+        songNumber: currentInQueue
     });
 }
 
 function previousSong() {
-    const shuffleSong = played.pop()
-
+    currentInQueue--;
     if (!shuffle.checked) {
-        current.number--;
-
-        if (!songs.playlists[current.playlist][current.number]) {
+        if (!queue.songs[currentInQueue]) {
             if (doLoop === 2) {
-                current.number = songs.playlists[current.playlist].length - 1;
+                currentInQueue = queue.songs.length - 1;
             } else {
-                current.number++;
+                currentInQueue++;
                 return
             }
         }
     } else {
-        if (shuffleSong !== undefined) {
-            current.number = shuffleSong
-        } else {
+        if (!queue.songs[shuffleQueue.at(currentInQueue)]) {
+            currentInQueue++;
             return
         }
     }
 
-    console.log(played)
-
     updatePlayer("change", {
-        songNumber: current
+        songNumber: currentInQueue
     });
 }
 
@@ -876,7 +892,9 @@ async function setupPlayer() {
             break;
     }
 
-    shuffle.checked = settings["shuffle"].status
+    shuffle.checked = settings["shuffle"].status;
+
+    shuffleTheQueue();
 
     const volumefile = fs.readFileSync(path.join(savesPath, "volume.txt"), "utf-8");
     const volume = parseFloat(volumefile);
@@ -885,6 +903,9 @@ async function setupPlayer() {
     slider.value = volume * 100;
     volumeValue.innerText = `${Math.round(volume * 100)}%`;
 
+    queue.playlistName = current.playlist
+    current = current.number ? current.number : current
+    currentInQueue = current;
     updatePlayer("change", {
         songNumber: current
     });
@@ -926,9 +947,6 @@ async function setupPlayer() {
  * @param {string} plname 
  */
 function getplaylist(plname) {
-    //playlist.style.visibility = "hidden";
-    //htmlsongs.style.visibility = "visible";
-
     search.value = "";
 
     removePlaylist();
@@ -936,7 +954,7 @@ function getplaylist(plname) {
     let playlistLength = 0;
     let songsCount = 0;
     for (let i = 0; i < songs.playlists[plname].length; i++) {
-        const songName = songs.playlists[plname][i];
+        const songInfo = songs.playlists[plname][i];
         songsCount++;
 
         const btn = document.createElement("button");
@@ -945,18 +963,12 @@ function getplaylist(plname) {
         const songPhoto = document.createElement("img");
         const artist = document.createElement("p");
 
-        songname.innerText = filter(songName);
+        songname.innerText = filter(songInfo.name);
         btn.style.gridTemplateColumns = "1fr auto";
         btn.appendChild(songname);
 
         if (settings["metadata"].status) {
-            let songPath = ""
-
-            if (plname === path.parse(folder).base) {
-                songPath = path.join(folder, songs.playlists[plname][i]);
-            } else {
-                songPath = path.join(folder, plname, songs.playlists[plname][i]);
-            }
+            let songPath = songInfo.location;
 
             musicMetadata.parseFile(songPath).then(data => {
                 if (data.common.picture) {
@@ -989,18 +1001,25 @@ function getplaylist(plname) {
         }
 
         btn.onclick = () => {
+            if (queue.playlistName !== plname || queue.songs.length !== songs.playlists[plname].length) {
+                currentInQueue = i;
+                diffence = 0;
+                queue.playlistName = plname;
+                queue.songs = [...songs.playlists[plname]];
+                shuffleTheQueue();
+            }
             updatePlayer("change", {
-                songNumber: {
-                    number: i,
-                    playlist: plname
-                }
+                songNumber: i,
+                force: true
             });
         }
+
         btn.oncontextmenu = (e) => {
-            console.log("right click on ", songName, i);
+            console.log("right click on ", songInfo.name, i);
             ipcRenderer.send("makeSongMenu", {
-                name: songName,
+                name: songInfo.name,
                 playlist: plname,
+                location: songInfo.location,
                 number: i,
                 addShow: false
             });
@@ -1009,19 +1028,9 @@ function getplaylist(plname) {
         btn.className = "grid px-2 text-left py-1 w-full text-sm text-gray-300 font-medium rounded-md hover:text-white hover:bg-white hover:bg-opacity-20 hover:border-transparent focus:border"
         htmlsongs.appendChild(btn);
 
-        //make a br element
-        //const br = document.createElement("br");
-        //br.id = "removable";
-        //htmlsongs.appendChild(br);
-
         nodes.push(btn);
-        //nodes.push(br);
     }
-    /*const btn = document.createElement("button");
-    btn.style.visibility = "hidden";
-    btn.id = "removable";
-    htmlsongs.appendChild(btn);
-    nodes.push(btn);*/
+
     latestPlaylist = plname;
     currentPlaylist.innerText = plname;
     plinfo.innerText = `${songsCount} songs`
@@ -1049,12 +1058,11 @@ function removePlaylist() {
         }
     }
     nodes = []
-    //playlist.style.visibility = "visible";
-    //htmlsongs.style.visibility = "hidden";
 }
 
 function makegallery() {
     getGallery(folder).then(desongs => {
+        console.log(desongs);
         songs = desongs;
 
         playlist.innerHTML = '';
@@ -1090,7 +1098,10 @@ function makegallery() {
         }
 
         if (currentPlaylist.innerText === "Album songs") {
-            getplaylist(JSON.parse(fs.readFileSync(path.join(savesPath, "latest.json"), "utf-8")).playlist);
+            const savedPlaylist = JSON.parse(fs.readFileSync(path.join(savesPath, "latest.json"), "utf-8")).playlist;
+            queue.songs = [...songs.playlists[savedPlaylist]];
+            queue.playlistName = savedPlaylist;
+            getplaylist(savedPlaylist);
         } else if (currentPlaylist.innerText === "Search results") {
             searchPlaylist(search.value);
         } else {
@@ -1132,25 +1143,24 @@ document.addEventListener("drop", (e) => {
     dragArea.style.display = "none";
 
     const files = e.dataTransfer.files;
-    const filePath = files[0].path;
 
-    if (isAudio(files[0].name)) {
-        if (settings["metadata"].status) {
-            musicMetadata.parseFile(filePath).then(data => {
-                if (data.common.picture) {
-                    coverImg.src = `data:image/png;base64,${data.common.picture[0].data.toString("base64")}`
-                    coverImg.style.display = "initial";
-                } else {
-                    coverImg.style.display = "none";
-                }
+    for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        if (isAudio(file.name)) {
+            const filePath = file.path;
+            const fileName = file.name;
+            const whereToPut = currentInQueue + i + 1;
+
+            queue.songs.splice(whereToPut, 0, {
+                name: fileName,
+                location: filePath,
+                out: true
             })
         }
-        nowplaying.innerText = filter(files[0].name);
-        const parsedPath = path.parse(filePath);
-        nowplaying.onclick = () => {
-            shell.openPath(parsedPath.dir);
-        }
-        player.src = filePath;
-        player.play();
     }
+    currentInQueue++;
+    diffence = files.length
+    updatePlayer("change", {
+        songNumber: currentInQueue
+    })
 })

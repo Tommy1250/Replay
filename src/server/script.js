@@ -166,7 +166,7 @@ function updatePlayer(event, {
     switch (event) {
         case "change":
             current = songNumber
-            nowplaying.innerText = filter(songs.playlists[current.playlist][current.number]);
+            nowplaying.innerText = filter(songs.playlists[current.playlist][current.number].name);
             nowplaying.onclick = () => {
                 if(latestPlaylist !== current.playlist) {
                     removePlaylist();
@@ -298,7 +298,7 @@ function getplaylist(plname) {
         const element = songs.playlists[plname][i];
 
         const btn = document.createElement("button");
-        btn.textContent = filter(element);
+        btn.textContent = filter(element.name);
         btn.onclick = () => {
             updatePlayer("change", {
                 songNumber: {
@@ -376,7 +376,7 @@ search.oninput = () => {
                  */
                 const song = songs.playlists[folder][j];
         
-                if(song.toLowerCase().includes(searchValue.toLowerCase())){
+                if(song.name.toLowerCase().includes(searchValue.toLowerCase())){
                     const btn = document.createElement("button");
                     btn.textContent = filter(song);
                     btn.onclick = () => {

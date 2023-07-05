@@ -7,7 +7,7 @@ const readdir = promisify(fs.readdir);
 
 async function getGallery(defolder) {
     /**
-     * @type {{folders: string[], playlists: {string: string[]}}}
+     * @type {{folders: string[], playlists: {string: [{name: string, location: string}]}}}
      */
     let all = {
         folders: [],
@@ -36,11 +36,16 @@ async function getGallery(defolder) {
     all.folders = folders;
 
     /**
-     * @type {{string: string[]}}
+     * @type {{string: [{name: string, location: string}]}}
      */
     let songsMap = {};
     const basepath = path.parse(defolder).base;
-    songsMap[basepath] = mp3files;
+    songsMap[basepath] = mp3files.map(file => {
+        return {
+            name: file,
+            location: path.join(defolder, file)
+        }
+    });
 
     for (let i = 0; i < folders.length; i++) {
         const folder = folders[i];
@@ -52,7 +57,12 @@ async function getGallery(defolder) {
                 sensitivity: 'base'
             });
         });
-        if (realSongsSorted) songsMap[folder] = realSongsSorted;
+        if (realSongsSorted) songsMap[folder] = realSongsSorted.map(file => {
+            return {
+                name: file,
+                location: path.join(defolder, folder, file)
+            }
+        });
     }
 
     all.playlists = songsMap;
