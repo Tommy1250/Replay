@@ -445,6 +445,12 @@ function updatePlayer(event, {
                 nodes[current.number].focus();
             }
 
+            /**
+             * @type {{title: string, artist: string, album: string, artwork: {src: string, type: string, sizes: string}[]}}
+             */
+            const trackInfo = {};
+            trackInfo.title = nowplaying.innerText;
+
             if (current.playlist === path.parse(folder).base) {
                 let songPath = path.join(folder, songs.playlists[current.playlist][current.number]);
                 player.src = songPath;
@@ -453,10 +459,29 @@ function updatePlayer(event, {
                         if (data.common.picture) {
                             coverImg.src = `data:image/png;base64,${data.common.picture[0].data.toString("base64")}`
                             coverImg.style.display = "initial";
+
+                            trackInfo.artwork = [
+                                {
+                                    src: `data:image/png;base64,${data.common.picture[0].data.toString("base64")}`
+                                }
+                            ]
                         } else {
                             coverImg.style.display = "none";
                         }
+
+                        if (data.common.artist) {
+                            trackInfo.artist = data.common.artist
+                        }
+                        let mediaMD = new MediaMetadata(trackInfo);
+
+                        // We assign our mediaMD to MediaSession.metadata property
+                        navigator.mediaSession.metadata = mediaMD
                     })
+                }else{
+                    let mediaMD = new MediaMetadata(trackInfo);
+
+                    // We assign our mediaMD to MediaSession.metadata property
+                    navigator.mediaSession.metadata = mediaMD
                 }
             } else {
                 let songPath = path.join(folder, current.playlist, songs.playlists[current.playlist][current.number]);
@@ -466,12 +491,34 @@ function updatePlayer(event, {
                         if (data.common.picture) {
                             coverImg.src = `data:image/png;base64,${data.common.picture[0].data.toString("base64")}`
                             coverImg.style.display = "initial";
+
+                            trackInfo.artwork = [
+                                {
+                                    src: `data:image/png;base64,${data.common.picture[0].data.toString("base64")}`
+                                }
+                            ]
                         } else {
                             coverImg.style.display = "none";
                         }
+
+                        if (data.common.artist) {
+                            trackInfo.artist = data.common.artist
+                        }
+
+                        let mediaMD = new MediaMetadata(trackInfo);
+
+                        // We assign our mediaMD to MediaSession.metadata property
+                        navigator.mediaSession.metadata = mediaMD
                     })
+                }else{
+                    let mediaMD = new MediaMetadata(trackInfo);
+
+                    // We assign our mediaMD to MediaSession.metadata property
+                    navigator.mediaSession.metadata = mediaMD
                 }
+                
             }
+            
 
             if (!firstTime) player.play();
             else firstTime = false;
@@ -510,6 +557,18 @@ function updatePlayer(event, {
     }
 
 }
+
+navigator.mediaSession.setActionHandler("play", () => {
+    player.play();
+});
+
+navigator.mediaSession.setActionHandler("pause", () => {
+    player.pause();
+});
+
+navigator.mediaSession.setActionHandler("nexttrack", nextSong);
+
+navigator.mediaSession.setActionHandler("previoustrack", previousSong);
 
 navigator.mediaDevices.addEventListener("devicechange", async () => {
     if (settings["output"].id === "default") {
@@ -592,6 +651,7 @@ player.onvolumechange = () => {
 player.onpause = () => {
     ipcRenderer.send("pause");
     pause.innerText = "Play";
+    navigator.mediaSession.playbackState = "paused";
 }
 
 player.onplay = () => {
@@ -600,6 +660,7 @@ player.onplay = () => {
         playlist: current.playlist
     });
     pause.innerText = "Pause";
+    navigator.mediaSession.playbackState = "playing";
 }
 
 player.onended = () => {
