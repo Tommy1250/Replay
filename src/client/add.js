@@ -53,7 +53,9 @@ const {
     getFolders
 } = require("../gallery");
 
-const lyricsFinder = require("lyrics-finder");
+// const lyricsFinder = require("lyrics-finder");
+const Genius = require("genius-lyrics");
+const genius = new Genius.Client();
 
 const {
     execSync, exec
@@ -331,7 +333,7 @@ ipcRenderer.on("open-link", (event, args) => {
 
 /**
  * @param {string} realname 
- * @returns {string} an edited title that code loves
+ * @returns {string} an edited title that operating systems love
  */
 function changeName(realname) {
     for (let i = 0; i < illegalChars.length; i++) {
@@ -601,25 +603,38 @@ async function downloadAudio({
         })
 }
 
-function searchLyrics(title, lyricsFolder, fileTitle) {
+async function searchLyrics(title, lyricsFolder, fileTitle) {
     console.log(`searching for lyrics for ${title}`);
     addStatus(`searching for lyrics for ${title}`);
 
-    lyricsFinder("", title)
-        .then(lyrics => {
-            if (lyrics) {
-                console.log(`found lyrics for ${title}`);
-                addStatus(`found lyrics for ${title}`);
-                fs.writeFileSync(path.join(lyricsFolder, fileTitle ? `${changeName(fileTitle)}.txt` : `${changeName(title)}.txt`), lyrics);
-                addStatus(`lyrics for ${title} was saved`);
-            } else {
-                console.log(`couldn't find lyrics for ${title}`);
-                addStatus(`couldn't find lyrics for ${title}`);
-            }
-        }).catch(err => {
-            console.error(err);
-            addStatus(err);
-        })
+    // lyricsFinder("", title)
+    //     .then(lyrics => {
+    //         if (lyrics) {
+    //             console.log(`found lyrics for ${title}`);
+    //             addStatus(`found lyrics for ${title}`);
+    //             fs.writeFileSync(path.join(lyricsFolder, fileTitle ? `${changeName(fileTitle)}.txt` : `${changeName(title)}.txt`), lyrics);
+    //             addStatus(`lyrics for ${title} was saved`);
+    //         } else {
+    //             console.log(`couldn't find lyrics for ${title}`);
+    //             addStatus(`couldn't find lyrics for ${title}`);
+    //         }
+    //     }).catch(err => {
+    //         console.error(err);
+    //         addStatus(err);
+    //     })
+
+    try{
+        const song = await genius.songs.search(title);
+        const lyrics = await song[0].lyrics(false)
+
+        console.log(`found lyrics for ${title}`);
+        addStatus(`found lyrics for ${title}`);
+        fs.writeFileSync(path.join(lyricsFolder, fileTitle ? `${changeName(fileTitle)}.txt` : `${changeName(title)}.txt`), lyrics);
+        addStatus(`lyrics for ${title} was saved`);
+    }catch (e) {
+        console.log(e);
+        addStatus(err);
+    }
 }
 
 function addStatus(statement) {

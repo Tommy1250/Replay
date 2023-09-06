@@ -12,7 +12,9 @@ const editBtn = document.getElementById("editBtn");
 const fs = require("fs");
 const path = require("path");
 
-const lyricsFinder = require("lyrics-finder");
+// const lyricsFinder = require("lyrics-finder");
+const Genius = require("genius-lyrics");
+const genius = new Genius.Client();
 
 let current = {
     name: "",
@@ -103,20 +105,20 @@ async function searchLyrics() {
     if (!search) return;
     searchbar.value = "";
 
-    lyricsFinder("", search)
-    .then((lyrics) => {
-        if(lyrics){
-            lyricsHTML.value = lyrics;
-        }else{
-            lyricsHTML.value = "Song not found!";
-        }
-    })
-    .catch((err) => {
-        console.log(err);
-        lyricsHTML.value = "Song not found!";
-    })
+    // lyricsFinder("", search)
+    // .then((lyrics) => {
+    //     if(lyrics){
+    //         lyricsHTML.value = lyrics;
+    //     }else{
+    //         lyricsHTML.value = "Song not found!";
+    //     }
+    // })
+    // .catch((err) => {
+    //     console.log(err);
+    //     lyricsHTML.value = "Song not found!";
+    // })
     
-    /*try{
+    try{
         const song = await genius.songs.search(search);
         const lyrics = await song[0].lyrics(false)
 
@@ -124,5 +126,5 @@ async function searchLyrics() {
     }catch (e) {
         console.log(e);
         lyricsHTML.innerText = "Song not found!";
-    }*/
+    }
 }

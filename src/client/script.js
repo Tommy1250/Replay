@@ -25,6 +25,7 @@ const timeValue = document.getElementById("time");
 const lyricsHTML = document.getElementById("lyrics");
 
 const loop = document.getElementById("loop");
+const loopOne = document.getElementById("loopone");
 const shuffle = document.getElementById("shuffle");
 const speed = document.getElementById("speed");
 
@@ -288,17 +289,20 @@ prevbtn.onclick = () => {
 loop.onclick = () => {
     switch (doLoop) {
         case 1:
-            loop.innerText = "Loop all"
+            loop.style.color = "#175aa2";
+            loopOne.classList.add("invisible");
             settings["loop"].status = "all"
             doLoop = 2
             break;
         case 2:
-            loop.innerText = "Loop off"
+            loop.style.color = "#FFFFFF";
+            loopOne.classList.add("invisible");
             settings["loop"].status = "0"
             doLoop = 0
             break;
         case 0:
-            loop.innerText = "Loop one"
+            loop.style.color = "#175aa2";
+            loopOne.classList.remove("invisible");
             settings["loop"].status = "one"
             doLoop = 1
             break;
@@ -650,7 +654,9 @@ player.onvolumechange = () => {
 
 player.onpause = () => {
     ipcRenderer.send("pause");
-    pause.innerText = "Play";
+    // pause.innerText = "Play";
+    pause.classList.remove("fa-circle-pause");
+    pause.classList.add("fa-circle-play");
     navigator.mediaSession.playbackState = "paused";
 }
 
@@ -659,7 +665,9 @@ player.onplay = () => {
         name: songs.playlists[current.playlist][current.number],
         playlist: current.playlist
     });
-    pause.innerText = "Pause";
+    // pause.innerText = "Pause";
+    pause.classList.remove("fa-circle-play");
+    pause.classList.add("fa-circle-pause");
     navigator.mediaSession.playbackState = "playing";
 }
 
@@ -906,9 +914,19 @@ function changeTimelinePosition() {
 
     //make the time diffent if the duration is bigger than an hour
     if (player.duration > 3600) {
-        timeValue.innerText = `${Math.floor(player.currentTime / 3600)}:${Math.floor(player.currentTime / 60) % 60}:${Math.floor(player.currentTime) % 60}/${Math.floor(player.duration / 3600)}:${Math.floor(player.duration / 60) % 60}:${Math.floor(player.duration) % 60}`;
+        const hours = Math.floor(player.currentTime / 3600);
+        const minutes = Math.floor(player.currentTime / 60) % 60;
+        const seconds = Math.floor(player.currentTime) % 60;
+        const playerDurationHours = Math.floor(player.duration / 3600);
+        const playerDurationMinutes = Math.floor(player.duration / 60) % 60;
+        const playerDurationSeconds = Math.floor(player.duration) % 60;
+        timeValue.innerText = `${hours > 10 ? hours : `0${hours}`}:${minutes > 10 ? minutes : `0${minutes}`}:${seconds > 10 ? seconds : `0${seconds}`}/${playerDurationHours > 10 ? playerDurationHours : `0${playerDurationHours}`}:${playerDurationMinutes > 10 ? playerDurationMinutes : `0${playerDurationMinutes}`}:${playerDurationSeconds > 10 ? playerDurationSeconds : `0${playerDurationSeconds}`}`;
     } else {
-        timeValue.innerText = `${Math.floor(player.currentTime / 60) % 60}:${Math.floor(player.currentTime) % 60}/${Math.floor(player.duration / 60) % 60}:${Math.floor(player.duration) % 60}`;
+        const minutes = Math.floor(player.currentTime / 60) % 60;
+        const seconds = Math.floor(player.currentTime) % 60;
+        const playerDurationMinutes = Math.floor(player.duration / 60) % 60;
+        const playerDurationSeconds = Math.floor(player.duration) % 60;
+        timeValue.innerText = `${minutes > 10 ? minutes : `0${minutes}`}:${seconds > 10 ? seconds : `0${seconds}`}/${playerDurationMinutes > 10 ? playerDurationMinutes : `0${playerDurationMinutes}`}:${playerDurationSeconds > 10 ? playerDurationSeconds : `0${playerDurationSeconds}`}`;
     }
 
     ipcRenderer.send("timeLineSend", {
@@ -924,15 +942,18 @@ async function setupPlayer() {
 
     switch (settings["loop"].status) {
         case "one":
-            loop.innerText = "Loop one"
+            loop.style.color = "#175aa2";
+            loopOne.classList.remove("invisible");
             doLoop = 1
             break;
         case "all":
-            loop.innerText = "Loop all"
+            loop.style.color = "#175aa2";
+            loopOne.classList.add("invisible");
             doLoop = 2
             break;
         case "0":
-            loop.innerText = "Loop off"
+            loop.style.color = "#FFFFFF";
+            loopOne.classList.add("invisible");
             doLoop = 0
             break;
     }
