@@ -466,7 +466,11 @@ if (!gotTheLock) {
 
 		if (!app.isPackaged) {
 			menuTemplate[0].submenu.push({
-				role: "reload"
+				role: "reload",
+				accelerator: 'Control+R'
+			}, {
+				role: "toggleDevTools",
+				accelerator: 'Control+Shift+I',
 			})
 		}
 

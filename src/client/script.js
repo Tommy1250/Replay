@@ -21,6 +21,7 @@ const pltime = document.getElementById("pltime");
 const pause = document.getElementById("pause");
 const timeline = document.getElementById("timeline");
 const timeValue = document.getElementById("time");
+const currentTime = document.getElementById("currentTime");
 
 const lyricsHTML = document.getElementById("lyrics");
 
@@ -474,7 +475,11 @@ function updatePlayer(event, {
                         }
 
                         if (data.common.artist) {
-                            trackInfo.artist = data.common.artist
+                            const artistName = document.createElement("p");
+                            artistName.className = "text-gray-500 font-normal text-sm";
+                            nowplaying.appendChild(artistName);
+                            artistName.innerText = data.common.artist;
+                            trackInfo.artist = data.common.artist;
                         }
                         let mediaMD = new MediaMetadata(trackInfo);
 
@@ -506,7 +511,11 @@ function updatePlayer(event, {
                         }
 
                         if (data.common.artist) {
-                            trackInfo.artist = data.common.artist
+                            const artistName = document.createElement("p");
+                            artistName.className = "text-gray-500 font-normal text-sm";
+                            nowplaying.appendChild(artistName)
+                            artistName.innerText = data.common.artist;
+                            trackInfo.artist = data.common.artist;
                         }
 
                         let mediaMD = new MediaMetadata(trackInfo);
@@ -520,9 +529,7 @@ function updatePlayer(event, {
                     // We assign our mediaMD to MediaSession.metadata property
                     navigator.mediaSession.metadata = mediaMD
                 }
-                
             }
-            
 
             if (!firstTime) player.play();
             else firstTime = false;
@@ -590,6 +597,19 @@ navigator.mediaDevices.addEventListener("devicechange", async () => {
     }
 })
 
+player.oncanplay = () => {
+    if(player.duration >= 3600) {
+        const playerDurationHours = Math.floor(player.duration / 3600);
+        const playerDurationMinutes = Math.floor(player.duration / 60) % 60;
+        const playerDurationSeconds = Math.floor(player.duration) % 60;
+        timeValue.innerText = `${playerDurationHours > 10 ? playerDurationHours : `0${playerDurationHours}`}:${playerDurationMinutes > 10 ? playerDurationMinutes : `0${playerDurationMinutes}`}:${playerDurationSeconds > 10 ? playerDurationSeconds : `0${playerDurationSeconds}`}`;
+    }else{
+        const playerDurationMinutes = Math.floor(player.duration / 60) % 60;
+        const playerDurationSeconds = Math.floor(player.duration) % 60;
+        timeValue.innerText = `${playerDurationMinutes > 10 ? playerDurationMinutes : `0${playerDurationMinutes}`}:${playerDurationSeconds > 10 ? playerDurationSeconds : `0${playerDurationSeconds}`}`;
+    }
+}
+
 ipcRenderer.on("outputChange", (event, arg) => {
     player.pause();
     player.setSinkId(arg)
@@ -641,12 +661,15 @@ ipcRenderer.on("lyrics", (event, arg) => {
     lyricsHTML.innerText = arg;
 });
 
-//make an event lestener that listens for the player when it gets muted
+//make an event listener that listens for the player when it gets muted
 player.onvolumechange = () => {
     if (player.muted) {
-        volumeValue.innerText = "Unmute";
+        // volumeValue.innerText = "Unmute";
+        volumeValue.innerText = "";
+        volumeValue.classList.add("fa-solid", "fa-volume-xmark");
         ipcRenderer.send("mute", true);
     } else {
+        volumeValue.classList.remove("fa-solid", "fa-volume-xmark");
         volumeValue.innerText = `${Math.round(player.volume * 100)}%`;
         ipcRenderer.send("mute", false);
     }
@@ -917,16 +940,11 @@ function changeTimelinePosition() {
         const hours = Math.floor(player.currentTime / 3600);
         const minutes = Math.floor(player.currentTime / 60) % 60;
         const seconds = Math.floor(player.currentTime) % 60;
-        const playerDurationHours = Math.floor(player.duration / 3600);
-        const playerDurationMinutes = Math.floor(player.duration / 60) % 60;
-        const playerDurationSeconds = Math.floor(player.duration) % 60;
-        timeValue.innerText = `${hours > 10 ? hours : `0${hours}`}:${minutes > 10 ? minutes : `0${minutes}`}:${seconds > 10 ? seconds : `0${seconds}`}/${playerDurationHours > 10 ? playerDurationHours : `0${playerDurationHours}`}:${playerDurationMinutes > 10 ? playerDurationMinutes : `0${playerDurationMinutes}`}:${playerDurationSeconds > 10 ? playerDurationSeconds : `0${playerDurationSeconds}`}`;
+        currentTime.innerText = `${hours > 10 ? hours : `0${hours}`}:${minutes > 10 ? minutes : `0${minutes}`}:${seconds > 10 ? seconds : `0${seconds}`}`
     } else {
         const minutes = Math.floor(player.currentTime / 60) % 60;
         const seconds = Math.floor(player.currentTime) % 60;
-        const playerDurationMinutes = Math.floor(player.duration / 60) % 60;
-        const playerDurationSeconds = Math.floor(player.duration) % 60;
-        timeValue.innerText = `${minutes > 10 ? minutes : `0${minutes}`}:${seconds > 10 ? seconds : `0${seconds}`}/${playerDurationMinutes > 10 ? playerDurationMinutes : `0${playerDurationMinutes}`}:${playerDurationSeconds > 10 ? playerDurationSeconds : `0${playerDurationSeconds}`}`;
+        currentTime.innerText = `${minutes > 10 ? minutes : `0${minutes}`}:${seconds > 10 ? seconds : `0${seconds}`}`
     }
 
     ipcRenderer.send("timeLineSend", {
