@@ -602,11 +602,11 @@ player.oncanplay = () => {
         const playerDurationHours = Math.floor(player.duration / 3600);
         const playerDurationMinutes = Math.floor(player.duration / 60) % 60;
         const playerDurationSeconds = Math.floor(player.duration) % 60;
-        timeValue.innerText = `${playerDurationHours > 10 ? playerDurationHours : `0${playerDurationHours}`}:${playerDurationMinutes > 10 ? playerDurationMinutes : `0${playerDurationMinutes}`}:${playerDurationSeconds > 10 ? playerDurationSeconds : `0${playerDurationSeconds}`}`;
+        timeValue.innerText = `${playerDurationHours > 9 ? playerDurationHours : `0${playerDurationHours}`}:${playerDurationMinutes > 9 ? playerDurationMinutes : `0${playerDurationMinutes}`}:${playerDurationSeconds > 9 ? playerDurationSeconds : `0${playerDurationSeconds}`}`;
     }else{
         const playerDurationMinutes = Math.floor(player.duration / 60) % 60;
         const playerDurationSeconds = Math.floor(player.duration) % 60;
-        timeValue.innerText = `${playerDurationMinutes > 10 ? playerDurationMinutes : `0${playerDurationMinutes}`}:${playerDurationSeconds > 10 ? playerDurationSeconds : `0${playerDurationSeconds}`}`;
+        timeValue.innerText = `${playerDurationMinutes > 9 ? playerDurationMinutes : `0${playerDurationMinutes}`}:${playerDurationSeconds > 9 ? playerDurationSeconds : `0${playerDurationSeconds}`}`;
     }
 }
 
@@ -940,11 +940,11 @@ function changeTimelinePosition() {
         const hours = Math.floor(player.currentTime / 3600);
         const minutes = Math.floor(player.currentTime / 60) % 60;
         const seconds = Math.floor(player.currentTime) % 60;
-        currentTime.innerText = `${hours > 10 ? hours : `0${hours}`}:${minutes > 10 ? minutes : `0${minutes}`}:${seconds > 10 ? seconds : `0${seconds}`}`
+        currentTime.innerText = `${hours > 9 ? hours : `0${hours}`}:${minutes > 9 ? minutes : `0${minutes}`}:${seconds > 9 ? seconds : `0${seconds}`}`
     } else {
         const minutes = Math.floor(player.currentTime / 60) % 60;
         const seconds = Math.floor(player.currentTime) % 60;
-        currentTime.innerText = `${minutes > 10 ? minutes : `0${minutes}`}:${seconds > 10 ? seconds : `0${seconds}`}`
+        currentTime.innerText = `${minutes > 9 ? minutes : `0${minutes}`}:${seconds > 9 ? seconds : `0${seconds}`}`
     }
 
     ipcRenderer.send("timeLineSend", {
