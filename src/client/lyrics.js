@@ -122,9 +122,9 @@ async function searchLyrics() {
         const song = await genius.songs.search(search);
         const lyrics = await song[0].lyrics(false)
 
-        lyricsHTML.innerText = lyrics;
+        lyricsHTML.value = lyrics;
     }catch (e) {
         console.log(e);
-        lyricsHTML.innerText = "Song not found!";
+        lyricsHTML.value = "Song not found!";
     }
 }

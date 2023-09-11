@@ -458,7 +458,7 @@ function updatePlayer(event, {
 
             if (current.playlist === path.parse(folder).base) {
                 let songPath = path.join(folder, songs.playlists[current.playlist][current.number]);
-                player.src = songPath;
+                player.src = songPath.split("#").join("%23");
                 if (settings["metadata"].status) {
                     musicMetadata.parseFile(songPath).then(data => {
                         if (data.common.picture) {
@@ -494,7 +494,7 @@ function updatePlayer(event, {
                 }
             } else {
                 let songPath = path.join(folder, current.playlist, songs.playlists[current.playlist][current.number]);
-                player.src = songPath;
+                player.src = songPath.split("#").join("%23");
                 if (settings["metadata"].status) {
                     musicMetadata.parseFile(songPath).then(data => {
                         if (data.common.picture) {
@@ -566,7 +566,6 @@ function updatePlayer(event, {
             player.currentTime = currentTime;
             break;
     }
-
 }
 
 navigator.mediaSession.setActionHandler("play", () => {
