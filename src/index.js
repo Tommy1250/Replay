@@ -59,6 +59,11 @@ let renameWindow;
  */
 let makeFolderWindow;
 
+/**
+ * @type {BrowserWindow}
+ */
+let listenTogetherWindow;
+
 const createWindow = () => {
 	// Create the browser window.
 	mainWindow = new BrowserWindow({
@@ -537,6 +542,35 @@ if (!gotTheLock) {
 	});
 }
 
+function launchListenTogether() {
+	if (!listenTogetherWindow) {
+		listenTogetherWindow = new BrowserWindow({
+			width: 500,
+			height: 650,
+			frame: false,
+			webPreferences: {
+				nodeIntegration: true,
+				contextIsolation: false
+			}
+		});
+
+		if (!app.isPackaged) {
+			listenTogetherWindow.webContents.openDevTools();
+		}
+
+		listenTogetherWindow.loadFile(path.join(__dirname, "client/listenTogether.html"));
+		listenTogetherWindow.setMenu(null);
+		listenTogetherWindow.setIcon(iconpath);
+
+		listenTogetherWindow.on("closed", () => {
+			listenTogetherWindow.destroy();
+			listenTogetherWindow = null;
+		});
+	} else {
+		listenTogetherWindow.focus();
+	}
+}
+
 // Quit when all windows are closed, except on macOS. There, it's common
 // for applications and their menu bar to stay active until the user quits
 // explicitly with Cmd + Q.
@@ -556,6 +590,10 @@ ipcMain.on("lyrics-button", () => {
 
 ipcMain.on("settings-button", () => {
 	Menu.getApplicationMenu().items[2].click();
+})
+
+ipcMain.on("listenTogether-button", () => {
+	launchListenTogether();
 })
 
 ipcMain.on("info-button", () => {
@@ -596,6 +634,18 @@ ipcMain.on("fullscreen-button-lyrics", () => {
 
 ipcMain.on("close-button-lyrics", () => {
 	lyricsWindow.close();
+})
+
+ipcMain.on("minimise-button-lt", () => {
+	listenTogetherWindow.minimize();
+})
+
+ipcMain.on("fullscreen-button-lt", () => {
+	listenTogetherWindow.isMaximized() ? listenTogetherWindow.restore() : listenTogetherWindow.maximize();
+})
+
+ipcMain.on("close-button-lt", () => {
+	listenTogetherWindow.close();
 })
 
 ipcMain.on("minimise-button-settings", () => {
@@ -895,23 +945,24 @@ ipcMain.on("context-downloader", (event, songNumber) => {
 		click: () => {
 			addWindow.webContents.send("download", songNumber);
 		}
-	},
-	{
-		label: "Download To ...",
-		submenu: []
-	},
-	{
-		label: "Open link",
-		click: () => {
-			addWindow.webContents.send("open-link", songNumber);
-		}
-	},
-	{
-		label: "Stream",
-		click: () => {
-			addWindow.webContents.send("stream", songNumber);
-		}
-	}]
+		},
+		{
+			label: "Download To ...",
+			submenu: []
+		},
+		{
+			label: "Open link",
+			click: () => {
+				addWindow.webContents.send("open-link", songNumber);
+			}
+		}//,
+		// {
+		// 	label: "Stream",
+		// 	click: () => {
+		// 		addWindow.webContents.send("stream", songNumber);
+		// 	}
+		// }
+	]
 
 	getFolders(fs.readFileSync(path.join(savesPath, "folder.txt"), "utf-8")).then(folders => {		
 		for (let i = 0; i < folders.length; i++) {
@@ -932,6 +983,11 @@ ipcMain.on("stream", (event, arg) => {
 	mainWindow.webContents.send("stream", arg);
 });
 
+ipcMain.on("streamEnd", () => {
+	if(listenTogetherWindow)
+		listenTogetherWindow.webContents.send("next");
+})
+
 ipcMain.on("updateLyrics", (event, arg) => {
 	if (lyricsWindow) {
 		lyricsWindow.webContents.send("lyrics", arg);
@@ -945,6 +1001,39 @@ ipcMain.on("updateLyrics", (event, arg) => {
 ipcMain.on("getLyrics", (event, arg) => {
 	lyricsWindow.webContents.send("lyrics", lyrics);
 });
+
+ipcMain.on("typeLyrics", (event, arg) => {
+	if (!lyricsWindow) {
+		lyricsWindow = new BrowserWindow({
+			width: 400,
+			height: 720,
+			frame: false,
+			webPreferences: {
+				nodeIntegration: true,
+				contextIsolation: false
+			}
+		});
+
+		if (!app.isPackaged) {
+			lyricsWindow.webContents.openDevTools();
+		}
+
+		lyricsWindow.loadFile(path.join(__dirname, "client/lyrics.html"));
+		lyricsWindow.setMenu(null);
+		lyricsWindow.setIcon(iconpath);
+
+		lyricsWindow.webContents.on("did-finish-load", () => {
+			lyricsWindow.webContents.send("title", (arg))
+		})
+
+		lyricsWindow.on("closed", () => {
+			lyricsWindow.destroy();
+			lyricsWindow = null;
+		});
+	} else {
+		lyricsWindow.focus();
+	}
+})
 
 ipcMain.on("renameSong", (event, arg) => {
 	renameWindow.close();

@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Listen Together</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="./listenTogether.js" defer></script>
+    <link rel="stylesheet" href="scrollbar.css">
+    <style>
+
+        *{
+            margin: 0;
+            box-sizing: border-box;
+        }
+
+        html,
+        body {
+            background-color: rgb(18, 17, 17);
+            color: white;
+            height: 100%;
+            overflow: hidden;
+        }
+
+        .bar {
+            -webkit-app-region: drag;
+            height: 25px;
+            width: 100%;
+            display: grid;
+            grid-template-columns: 1fr auto;
+            grid-template-rows: none;
+            background-color: rgb(25, 24, 24);
+        }
+
+        .no-drag {
+            -webkit-app-region: no-drag;
+        }
+
+        .icon {
+            width: 20px;
+            height: 20px;
+            object-fit: contain;
+            align-self: center;
+        }
+
+        .rest {
+            margin-top: 30px;
+        }
+        
+        .bold {
+            font-weight: 900;
+        }
+    </style>
+</head>
+<body>
+    <div class="bar bg-opacity-50 fixed top-[0]">
+        <div>
+            <p class="px-1">Listen Together</p>
+        </div>
+        <div>
+            <button class="no-drag hover:bg-gray-600 bg-opacity-75 w-5 h-4 px-1" id="minimise-button"><img class="icon" src="../assets/minimise.png"></button>
+            <button class="no-drag hover:bg-gray-600 bg-opacity-75 w-5 h-4 px-1" id="fullscreen-button"><img class="icon" src="../assets/maximise.png"></button>
+            <button class="no-drag hover:bg-red-600 bg-opacity-75 w-5 h-4 px-1" id="close-button"><img class="icon" src="../assets/cross.png"></button>
+        </div>
+    </div>
+    <div class="rest">
+        <form id="playlist">
+            <input type="text" id="pl" class="text-black">
+            <button type="submit">Submit</button>
+        </form>
+        <div id="members"></div>
+        <ul id="queue" style="list-style-type: decimal; padding-right: 2px;" class="ml-5"></ul>
+    </div>
+</body>
+</html>

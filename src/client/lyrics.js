@@ -100,6 +100,10 @@ form.onsubmit = (event) => {
     searchLyrics();
 }
 
+ipcRenderer.on("title", (ev, arg) => {
+    searchbar.value = arg;
+})
+
 async function searchLyrics() {
     const search = searchbar.value;
     if (!search) return;

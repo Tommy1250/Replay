@@ -184,7 +184,7 @@ async function download(url) {
             //make a list item with the video name and a button to download it
             let li = document.createElement("li");
             let btn = document.createElement("button");
-            let btn2 = document.createElement("button");
+            // let btn2 = document.createElement("button");
             let btn3 = document.createElement("button");
             let name = document.createElement("label");
             let br = document.createElement("br");
@@ -195,9 +195,9 @@ async function download(url) {
             btn.id = `${i}download`;
             btn.className = "px-3 py-[0.7] text-sm text-blue-600 font-semibold rounded-full border border-blue-200 hover:text-white hover:bg-blue-600 hover:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2"
 
-            btn2.innerText = "Stream";
-            btn2.id = `${i}stream`;
-            btn2.className = "px-3 py-[0.7] text-sm text-blue-600 font-semibold rounded-full border border-blue-200 hover:text-white hover:bg-blue-600 hover:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2"
+            // btn2.innerText = "Stream";
+            // btn2.id = `${i}stream`;
+            // btn2.className = "px-3 py-[0.7] text-sm text-blue-600 font-semibold rounded-full border border-blue-200 hover:text-white hover:bg-blue-600 hover:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2"
 
             btn3.innerText = "Open";
             btn3.id = `${i}open`;
@@ -262,18 +262,18 @@ async function download(url) {
                 ipcRenderer.send("context-downloader", i);
             }
 
-            btn2.onclick = () => {
-                ipcRenderer.send("stream", {
-                    url: `http://195.201.26.179:5050/stream?url=${video.url}`,
-                    title: video.title,
-                    youtube: video.url,
-                    image: video.thumbnail
-                });
-            }
+            // btn2.onclick = () => {
+            //     ipcRenderer.send("stream", {
+            //         url: `http://195.201.26.179:5050/stream?url=${video.url}`,
+            //         title: video.title,
+            //         youtube: video.url,
+            //         image: video.thumbnail
+            //     });
+            // }
 
             li.appendChild(name);
             li.appendChild(btn);
-            li.appendChild(btn2);
+            // li.appendChild(btn2);
             li.appendChild(btn3);
             li.appendChild(br2);
             li.appendChild(img);
@@ -311,9 +311,9 @@ ipcRenderer.on("download", (event, args) => {
     document.getElementById(`${args}download`).click();
 })
 
-ipcRenderer.on("stream", (event, args) => {
-    document.getElementById(`${args}stream`).click();
-})
+// ipcRenderer.on("stream", (event, args) => {
+//     document.getElementById(`${args}stream`).click();
+// })
 
 ipcRenderer.on("download-to", (event, args) => {
     console.log(args);

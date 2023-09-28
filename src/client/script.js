@@ -48,6 +48,7 @@ const fileButton = document.getElementById("file-button");
 const lyricsButton = document.getElementById("lyrics-button");
 const settingsButton = document.getElementById("settings-button");
 const infoButton = document.getElementById("info-button");
+const listenTogetherButton = document.getElementById("listenTogether-button");
 
 const minimiseButton = document.getElementById("minimise-button");
 const fullscreenButton = document.getElementById("fullscreen-button");
@@ -198,6 +199,10 @@ lyricsButton.onclick = () => {
 
 settingsButton.onclick = () => {
     ipcRenderer.send("settings-button");
+}
+
+listenTogetherButton.onclick = () => {
+    ipcRenderer.send("listenTogether-button")
 }
 
 infoButton.onclick = () => {
@@ -358,9 +363,9 @@ search.oninput = () => {
 
 document.addEventListener('keydown', (event) => {
     if (search !== document.activeElement) {
-        event.preventDefault();
         switch (event.code) {
             case "Space":
+                event.preventDefault();
                 if (player.paused) {
                     player.play();
                 } else {
@@ -368,12 +373,15 @@ document.addEventListener('keydown', (event) => {
                 }
                 break;
             case "ArrowRight":
+                event.preventDefault();
                 nextSong();
                 break;
             case "ArrowLeft":
+                event.preventDefault();
                 previousSong();
                 break;
             case "ArrowUp":
+                event.preventDefault();
                 if (player.volume < 0.95) {
                     updatePlayer("volume", {
                         volume: player.volume + 0.05
@@ -389,6 +397,7 @@ document.addEventListener('keydown', (event) => {
                 }
                 break;
             case "ArrowDown":
+                event.preventDefault();
                 if (player.volume > 0.05) {
                     updatePlayer("volume", {
                         volume: player.volume - 0.05
@@ -404,6 +413,7 @@ document.addEventListener('keydown', (event) => {
                 }
                 break;
             case "KeyM":
+                event.preventDefault();
                 if (player.muted) {
                     player.muted = false;
                 } else {
@@ -411,14 +421,18 @@ document.addEventListener('keydown', (event) => {
                 }
                 break;
             case "KeyL":
+                event.preventDefault();
                 loop.click();
                 break;
             case "KeyS":
+                event.preventDefault();
                 shuffle.click();
                 break;
         }
     }
 })
+
+let streaming = false;
 
 ipcRenderer.on("stream", (event, arg) => {
     coverImg.style.display = "initial";
@@ -427,9 +441,47 @@ ipcRenderer.on("stream", (event, arg) => {
     nowplaying.onclick = () => {
         shell.openExternal(arg.youtube);
     }
+
+    /**
+     * @type {{title: string, artist: string, album: string, artwork: {src: string, type: string, sizes: string}[]}}
+     */
+    const trackInfo = {};
+    trackInfo.title = arg.title;
+
+    trackInfo.artwork = [
+        {
+            src: arg.image
+        }
+    ]
+
+    if (arg.artist) {
+        trackInfo.artist = arg.artist;
+        const artistName = document.createElement("p");
+        artistName.className = "text-gray-500 font-normal text-sm";
+        nowplaying.appendChild(artistName);
+        artistName.innerText = arg.artist;
+    }
+
+    let mediaMD = new MediaMetadata(trackInfo);
+
+    navigator.mediaSession.metadata = mediaMD
+
     player.src = arg.url;
     player.play();
+
+    streaming = true;
+
+
+    player.onended = () => {
+        if(streaming){
+            ipcRenderer.send("streamEnd");
+            player.pause();
+            streaming = false;
+        }
+    }
 })
+
+let doubleClick = false;
 
 /**
  * @param {"change" | "volume" | "seek"} event
@@ -446,8 +498,16 @@ function updatePlayer(event, {
             current = songNumber
             nowplaying.innerText = filter(songs.playlists[current.playlist][current.number]);
             nowplaying.onclick = () => {
-                if (current.playlist !== currentPlaylist.innerText) getplaylist(current.playlist);
-                nodes[current.number].focus();
+                if (!doubleClick) {
+                    if (current.playlist !== currentPlaylist.innerText) getplaylist(current.playlist);
+                    nodes[current.number].focus();
+                    doubleClick = true;
+                    setTimeout(() => {
+                        doubleClick = false;
+                    }, 200);
+                } else {
+                    ipcRenderer.send("typeLyrics", filter(songs.playlists[current.playlist][current.number]))
+                }
             }
 
             /**
@@ -486,7 +546,7 @@ function updatePlayer(event, {
                         // We assign our mediaMD to MediaSession.metadata property
                         navigator.mediaSession.metadata = mediaMD
                     })
-                }else{
+                } else {
                     let mediaMD = new MediaMetadata(trackInfo);
 
                     // We assign our mediaMD to MediaSession.metadata property
@@ -523,7 +583,7 @@ function updatePlayer(event, {
                         // We assign our mediaMD to MediaSession.metadata property
                         navigator.mediaSession.metadata = mediaMD
                     })
-                }else{
+                } else {
                     let mediaMD = new MediaMetadata(trackInfo);
 
                     // We assign our mediaMD to MediaSession.metadata property
@@ -597,12 +657,12 @@ navigator.mediaDevices.addEventListener("devicechange", async () => {
 })
 
 player.oncanplay = () => {
-    if(player.duration >= 3600) {
+    if (player.duration >= 3600) {
         const playerDurationHours = Math.floor(player.duration / 3600);
         const playerDurationMinutes = Math.floor(player.duration / 60) % 60;
         const playerDurationSeconds = Math.floor(player.duration) % 60;
         timeValue.innerText = `${playerDurationHours > 9 ? playerDurationHours : `0${playerDurationHours}`}:${playerDurationMinutes > 9 ? playerDurationMinutes : `0${playerDurationMinutes}`}:${playerDurationSeconds > 9 ? playerDurationSeconds : `0${playerDurationSeconds}`}`;
-    }else{
+    } else {
         const playerDurationMinutes = Math.floor(player.duration / 60) % 60;
         const playerDurationSeconds = Math.floor(player.duration) % 60;
         timeValue.innerText = `${playerDurationMinutes > 9 ? playerDurationMinutes : `0${playerDurationMinutes}`}:${playerDurationSeconds > 9 ? playerDurationSeconds : `0${playerDurationSeconds}`}`;
@@ -694,6 +754,7 @@ player.onplay = () => {
 }
 
 player.onended = () => {
+    if(streaming) return null;
     if (!played.includes(current.number)) played.push(current.number);
 
     if (!shuffle.checked) {

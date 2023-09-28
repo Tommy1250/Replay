@@ -517,6 +517,10 @@ Ensure the default browser behavior of the `hidden` attribute.
   margin-bottom: 100px;
 }
 
+.mb-3 {
+  margin-bottom: 16px;
+}
+
 .mr-1 {
   margin-right: 8px;
 }
@@ -537,12 +541,12 @@ Ensure the default browser behavior of the `hidden` attribute.
   margin-right: 12px;
 }
 
-.mb-\[80px\] {
-  margin-bottom: 80px;
+.ml-5 {
+  margin-left: 32px;
 }
 
-.mb-3 {
-  margin-bottom: 16px;
+.mb-\[80px\] {
+  margin-bottom: 80px;
 }
 
 .flex {
@@ -621,6 +625,10 @@ Ensure the default browser behavior of the `hidden` attribute.
 
 .flex-grow-0 {
   flex-grow: 0;
+}
+
+.transform {
+  transform: translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y));
 }
 
 .cursor-pointer {
