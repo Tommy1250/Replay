@@ -735,7 +735,7 @@ player.onvolumechange = () => {
 }
 
 player.onpause = () => {
-    ipcRenderer.send("pause");
+    ipcRenderer.send("pause", player.currentTime);
     // pause.innerText = "Play";
     pause.classList.remove("fa-circle-pause");
     pause.classList.add("fa-circle-play");
@@ -745,7 +745,8 @@ player.onpause = () => {
 player.onplay = () => {
     ipcRenderer.send("play", {
         name: songs.playlists[current.playlist][current.number],
-        playlist: current.playlist
+        playlist: current.playlist,
+        time: player.currentTime
     });
     // pause.innerText = "Pause";
     pause.classList.remove("fa-circle-play");

@@ -31,6 +31,7 @@
     "ip": "^2.0.0",
     "music-metadata": "^7.12.5",
     "socket.io": "^4.5.0",
+    "socket.io-client": "^4.7.2",
     "yt-search": "^2.10.3",
     "ytfps": "^1.0.6"
   },

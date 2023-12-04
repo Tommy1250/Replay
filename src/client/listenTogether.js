@@ -23,6 +23,14 @@ closeButton.onclick = () => {
     ipcRenderer.send("close-button-lt")
 }
 
+const {io} = require("socket.io-client");
+
+const socket = io("http://localhost:6000");
+
+socket.on("connect", () => {
+    console.log("connected");
+})
+
 /**
  * @type {string[]}
  */
@@ -33,6 +41,24 @@ ipcRenderer.on("next", () => {
     sendStream(queue[++current].url);
     queueUl.childNodes.item(current - 1).firstChild.classList.remove("bold");
     queueUl.childNodes.item(current).firstChild.classList.add("bold");
+
+    //send to server the update
+})
+
+ipcRenderer.on("prevoius", () => {
+    sendStream(queue[--current].url);
+    queueUl.childNodes.item(current + 1).firstChild.classList.remove("bold");
+    queueUl.childNodes.item(current).firstChild.classList.add("bold");
+
+    //send to server the update
+})
+
+ipcRenderer.on("play", (ev, time) => {
+    //make code to send to all others that i played with the time
+})
+
+ipcRenderer.on("pause", (ev, time) => {
+    //make code to send to all others that i paused with the time
 })
 
 playlistForm.onsubmit = async (ev) => {
@@ -40,6 +66,7 @@ playlistForm.onsubmit = async (ev) => {
     const playlistLink = playlistInput.value;
 
     if (playlistLink.match(/^https?:\/\/(www.youtube.com|music.youtube.com|youtube.com)\/playlist(.*)$/)) {
+        //send to other clients to fetch the playlist
         const playlist = await ytfps(playlistLink);
         queue.push(...playlist.videos);
         current = 0;
@@ -55,6 +82,7 @@ playlistForm.onsubmit = async (ev) => {
         sendStream(queue[0].url);
         queueUl.childNodes.item(current).firstChild.classList.add("bold");
     } else if (ytdl.validateURL(playlistLink)) {
+        //send to other clients to play the link
         sendStream(playlistLink);
     }
 }

@@ -1204,11 +1204,13 @@ ipcMain.on("change", (event, arg) => {
 ipcMain.on("play", (event, arg) => {
 	playing = true;
 	changeActivity(arg.name, arg.playlist);
+	if(listenTogetherWindow) listenTogetherWindow.webContents.send("play", arg.time);
 });
 
 ipcMain.on("pause", (event, arg) => {
 	playing = false;
-	stopActivity()
+	stopActivity();
+	if(listenTogetherWindow) listenTogetherWindow.webContents.send("pause", arg);
 });
 
 // In this file you can include the rest of your app's specific main process
