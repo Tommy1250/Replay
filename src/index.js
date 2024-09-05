@@ -738,7 +738,6 @@ ipcMain.on("makeSongMenu", (event, arg) => {
 						deleteSong(arg.name, arg.playlist);
 					}
 				})
-
 			}
 		}
 	]
