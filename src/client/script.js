@@ -833,13 +833,7 @@ function searchPlaylist(searchValue) {
                     btn.className = "grid px-2 text-left py-1 w-full text-sm text-gray-300 font-medium rounded-md hover:text-white hover:bg-white hover:bg-opacity-20 hover:border-transparent focus:border"
                     htmlsongs.appendChild(btn);
 
-                    //make a br element
-                    //const br = document.createElement("br");
-                    //br.id = "removable";
-                    //htmlsongs.appendChild(br);
-
                     nodes.push(btn);
-                    //nodes.push(br);
                 }
             }
         }
@@ -1025,9 +1019,6 @@ async function setupPlayer() {
  * @param {string} plname 
  */
 function getplaylist(plname) {
-    //playlist.style.visibility = "hidden";
-    //htmlsongs.style.visibility = "visible";
-
     search.value = "";
 
     removePlaylist();
@@ -1108,19 +1099,9 @@ function getplaylist(plname) {
         btn.className = "grid px-2 text-left py-1 w-full text-sm text-gray-300 font-medium rounded-md hover:text-white hover:bg-white hover:bg-opacity-20 hover:border-transparent focus:border"
         htmlsongs.appendChild(btn);
 
-        //make a br element
-        //const br = document.createElement("br");
-        //br.id = "removable";
-        //htmlsongs.appendChild(br);
-
         nodes.push(btn);
-        //nodes.push(br);
     }
-    /*const btn = document.createElement("button");
-    btn.style.visibility = "hidden";
-    btn.id = "removable";
-    htmlsongs.appendChild(btn);
-    nodes.push(btn);*/
+
     latestPlaylist = plname;
     currentPlaylist.innerText = plname;
     plinfo.innerText = `${songsCount} songs`
@@ -1148,8 +1129,6 @@ function removePlaylist() {
         }
     }
     nodes = []
-    //playlist.style.visibility = "visible";
-    //htmlsongs.style.visibility = "hidden";
 }
 
 function makegallery() {
