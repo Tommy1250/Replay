@@ -103,7 +103,11 @@ ipcRenderer.on("savesFolder", (event, data) => {
 
     port.value = settings["server"].port
 
-    serveradress.innerText = `http://${ip.address("Ethernet") ?? ip.address()}:${settings["server"].port}`
+    if(process.platform === "win32"){
+        serveradress.innerText = `http://${ip.address("Ethernet") ?? ip.address()}:${settings["server"].port}`
+    }else{
+        serveradress.innerText = `http://${ip.address()}:${settings["server"].port}`
+    }
 
     const folderLocation = fs.readFileSync(path.join(savesPath, "folder.txt"), "utf-8")
     if(folderLocation === ""){
