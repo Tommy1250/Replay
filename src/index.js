@@ -10,7 +10,7 @@ const {
 const path = require('path');
 const fs = require("fs");
 
-const iconpath = path.join(__dirname, 'favicon.ico');
+const iconpath = process.platform === "win32" ? path.join(__dirname, 'favicon.ico') : path.join(__dirname, 'icon-linux.png');
 
 let lyrics;
 
@@ -788,7 +788,6 @@ ipcMain.on("makeSongMenu", (event, arg) => {
 						deleteSong(arg.name, arg.playlist);
 					}
 				})
-
 			}
 		}
 	]
