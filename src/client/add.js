@@ -81,12 +81,14 @@ let musicFolder = "";
 let settings = {};
 let folders = [];
 let ffmpegFound = false;
+let pathConfig = "";
 
 ipcRenderer.send("getFolder");
 
 ipcRenderer.on("savesFolder", (event, data) => {
     savesPath = data;
     musicFolder = fs.readFileSync(path.join(savesPath, "folder.txt"), "utf-8");
+    pathConfig = path.parse(musicFolder).base;
     settings = JSON.parse(
         fs.readFileSync(path.join(savesPath, "settings.json"), "utf-8")
     );
@@ -101,7 +103,6 @@ ipcRenderer.on("savesFolder", (event, data) => {
     });
 });
 
-let pathConfig = path.parse(musicFolder).base;
 let toDownload = 0;
 let downloaded = 0;
 let errored = 0;

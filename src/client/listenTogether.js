@@ -89,24 +89,6 @@ playlistForm.onsubmit = async (ev) => {
 
 function sendStream(url) {
     ytdl.getInfo(url).then(res => {
-        const formats = res.player_response.streamingData.adaptiveFormats;
-
-        for (let i = 0; i < formats.length; i++) {
-            const video = formats[i];
-            if (!video.audioQuality)
-                continue;
-            if (video.audioQuality === "AUDIO_QUALITY_MEDIUM" && video.mimeType.includes("opus")) {
-                console.log("found heighest audio", video);
-                ipcRenderer.send("stream", {
-                    image: res.videoDetails.thumbnails.at(-1).url,
-                    title: res.videoDetails.title,
-                    youtube: res.baseUrl,
-                    url: video.url,
-                    artist: res.videoDetails.author.name,
-                    youtube: queue[current].url
-                })
-                break;
-            }
-        }
+        
     })
 }
