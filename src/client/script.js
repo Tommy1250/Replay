@@ -1,5 +1,5 @@
 /**
- * @type {{folders: string[], playlists: {string: string[]}}}
+ * @type {{folders: string[], playlists: {[plName: string]: string[]}}}
  */
 let songs;
 
@@ -33,7 +33,7 @@ const speed = document.getElementById("speed");
 /**
  * @type {HTMLInputElement}
  */
-const slider = document.getElementById("volume");
+const volumeSlider = document.getElementById("volume");
 const volumeValue = document.getElementById("davolume");
 
 const playlist = document.getElementById("playlists");
@@ -54,13 +54,13 @@ const fullscreenButton = document.getElementById("fullscreen-button");
 const closeButton = document.getElementById("close-button");
 
 /**
- * 
- * @param {string} file 
+ *
+ * @param {string} file
  * @returns {string}
  */
 const filter = (file) => {
-    return file.replace(".mp3", "").replace(".flac", "").replace(".m4a", "").replace(".wav", "").replace(".ogg", "")
-}
+    return file.replace(".mp3", "").replace(".flac", "").replace(".m4a", "").replace(".wav", "").replace(".ogg", "");
+};
 
 let played = [];
 
@@ -68,22 +68,17 @@ let galleryDone = false;
 let firstTime = true;
 
 const fs = require("fs");
-const musicMetadata = require('music-metadata');
+const musicMetadata = require("music-metadata");
 
-const {
-    getGallery
-} = require("../gallery");
+const { getGallery } = require("../gallery");
 
-const {
-    ipcRenderer,
-    shell
-} = require("electron");
+const { ipcRenderer, shell } = require("electron");
 
 const path = require("path");
 
 let current = {
     number: 0,
-    playlist: "random"
+    playlist: "random",
 };
 
 let latestPlaylist = "";
@@ -100,9 +95,14 @@ let folder = "";
 let lyricsFolder = "";
 let settings;
 
+/**
+ * @typedef {{picture?: string, artist?: string, duration?: number}} songMetadata
+ * @type {{[songName: string]: songMetadata }}
+ */
+let metadata = {};
+
 ipcRenderer.on("savesFolder", (event, data) => {
     savesPath = data;
-    console.log("something happened", data);
     folder = fs.readFileSync(path.join(savesPath, "folder.txt"), "utf-8");
     lyricsFolder = fs.readFileSync(path.join(savesPath, "lyrics.txt"), "utf-8");
     settings = JSON.parse(fs.readFileSync(path.join(savesPath, "settings.json"), "utf-8"));
@@ -111,12 +111,13 @@ ipcRenderer.on("savesFolder", (event, data) => {
     } else {
         nowplaying.innerText = "No folder selected! Please select a folder in the file menu.";
     }
-    console.log(fs.readdirSync(savesPath));
+
+    // console.log(fs.readdirSync(savesPath));
 });
 
 ipcRenderer.on("settingsChanged", (event, data) => {
-    settings = data
-})
+    settings = data;
+});
 
 ipcRenderer.on("refresh", () => {
     makegallery();
@@ -135,18 +136,18 @@ ipcRenderer.on("folder", (event, arg) => {
     fs.writeFileSync(path.join(savesPath, "folder.txt"), folder);
     current = {
         number: 0,
-        playlist: path.parse(folder).base
-    }
+        playlist: path.parse(folder).base,
+    };
     makegallery();
     setTimeout(() => {
-        getplaylist(path.parse(folder).base)
+        getplaylist(path.parse(folder).base);
     }, 1000);
 });
 
 ipcRenderer.on("lyricsFolder", (event, arg) => {
     lyricsFolder = arg;
     fs.writeFileSync(path.join(savesPath, "lyrics.txt"), lyricsFolder);
-})
+});
 
 ipcRenderer.on("next", () => {
     nextSong();
@@ -159,100 +160,100 @@ ipcRenderer.on("prev", () => {
 ipcRenderer.on("change", (event, arg) => {
     current = arg;
     updatePlayer("change", {
-        songNumber: current
+        songNumber: current,
     });
 });
 
 ipcRenderer.on("seek", (event, arg) => {
     updatePlayer("seek", {
-        currentTime: player.currentTime + arg
-    })
-})
+        currentTime: player.currentTime + arg,
+    });
+});
 
 ipcRenderer.on("mute", () => {
     player.muted = !player.muted;
-})
+});
 
 ipcRenderer.on("volume", (event, arg) => {
-    slider.value = arg * 100;
+    volumeSlider.value = arg * 100;
     updatePlayer("volume", {
-        volume: arg
-    })
-})
+        volume: arg,
+    });
+});
 
 ipcRenderer.on("loop", () => {
     loop.click();
-})
+});
 
 ipcRenderer.on("shuffle", () => {
     shuffle.click();
-})
+});
 
 fileButton.onclick = () => {
     ipcRenderer.send("file-button");
-}
+};
 
 lyricsButton.onclick = () => {
     ipcRenderer.send("lyrics-button");
-}
+};
 
 settingsButton.onclick = () => {
     ipcRenderer.send("settings-button");
-}
+};
 
 infoButton.onclick = () => {
     ipcRenderer.send("info-button");
-}
+};
 
 minimiseButton.onclick = () => {
     ipcRenderer.send("minimise-button");
-}
+};
 
 fullscreenButton.onclick = () => {
     ipcRenderer.send("fullscreen-button");
-}
+};
 
 closeButton.onclick = () => {
-    ipcRenderer.send("close-button")
-}
+    ipcRenderer.send("close-button");
+};
 
-slider.addEventListener("input", () => {
+volumeSlider.addEventListener("input", () => {
     updatePlayer("volume", {
-        volume: slider.value / 100
+        volume: volumeSlider.value / 100,
     });
-})
+});
 
-slider.addEventListener("wheel", (ev) => {
+volumeSlider.addEventListener("wheel", (ev) => {
     if (ev.deltaY == -100) {
         if (player.volume < 0.98) {
             updatePlayer("volume", {
-                volume: player.volume + 0.02
+                volume: player.volume + 0.02,
             });
-            slider.value = player.volume * 100;
+            volumeSlider.value = player.volume * 100;
             volumeValue.innerText = `${Math.round(player.volume * 100)}%`;
         } else {
             updatePlayer("volume", {
-                volume: 1
+                volume: 1,
             });
-            slider.value = player.volume * 100;
+            volumeSlider.value = player.volume * 100;
             volumeValue.innerText = `${Math.round(player.volume * 100)}%`;
         }
     } else {
         if (player.volume > 0.02) {
             updatePlayer("volume", {
-                volume: player.volume - 0.02
+                volume: player.volume - 0.02,
             });
-            slider.value = player.volume * 100;
+            volumeSlider.value = player.volume * 100;
             volumeValue.innerText = `${Math.round(player.volume * 100)}%`;
         } else {
             updatePlayer("volume", {
-                volume: 0.01
+                volume: 0.01,
             });
-            slider.value = player.volume * 100;
+            volumeSlider.value = player.volume * 100;
             volumeValue.innerText = `${Math.round(player.volume * 100)}%`;
         }
     }
-})
+});
 
 volumeValue.onclick = () => {
     if (player.muted) {
@@ -260,75 +261,74 @@ volumeValue.onclick = () => {
     } else {
         player.muted = true;
     }
-}
+};
 
-timeline.addEventListener('input', () => {
+timeline.addEventListener("input", () => {
     const time = (timeline.value * player.duration) / 100;
     player.currentTime = time;
 });
 
 ipcRenderer.on("timeLineReceive", (event, arg) => {
-    player.currentTime = arg
-})
+    player.currentTime = arg;
+});
 
 pause.onclick = () => {
     if (player.paused) {
-        player.play()
+        player.play();
     } else {
         player.pause();
     }
-}
+};
 
 nextbtn.onclick = () => {
     nextSong();
-}
+};
 
 prevbtn.onclick = () => {
     previousSong();
-}
+};
 
 loop.onclick = () => {
     switch (doLoop) {
         case 1:
             loop.style.color = "#175aa2";
             loopOne.classList.add("invisible");
-            settings["loop"].status = "all"
-            doLoop = 2
+            settings["loop"].status = "all";
+            doLoop = 2;
             break;
         case 2:
             loop.style.color = "#FFFFFF";
             loopOne.classList.add("invisible");
-            settings["loop"].status = "0"
-            doLoop = 0
+            settings["loop"].status = "0";
+            doLoop = 0;
             break;
         case 0:
             loop.style.color = "#175aa2";
             loopOne.classList.remove("invisible");
-            settings["loop"].status = "one"
-            doLoop = 1
+            settings["loop"].status = "one";
+            doLoop = 1;
             break;
     }
 
     ipcRenderer.send("loopDone", settings["loop"].status);
     fs.writeFileSync(path.join(savesPath, "settings.json"), JSON.stringify(settings));
-}
+};
 
 shuffle.onclick = () => {
-    settings["shuffle"].status = shuffle.checked
+    settings["shuffle"].status = shuffle.checked;
     ipcRenderer.send("shuffleclick", shuffle.checked);
 
     fs.writeFileSync(path.join(savesPath, "settings.json"), JSON.stringify(settings));
-}
+};
 
 speed.addEventListener("click", () => {
     if (player.playbackRate < 2) {
         player.playbackRate += 0.25;
-    }
-    else {
+    } else {
         player.playbackRate = 0.25;
     }
     speed.innerText = `speed ${player.playbackRate}x`;
-})
+});
 
 speed.addEventListener("wheel", (ev) => {
     if (ev.deltaY == -100) {
@@ -344,19 +344,19 @@ speed.addEventListener("wheel", (ev) => {
 clearSearch.onclick = () => {
     search.value = "";
     searchPlaylist(search.value);
-}
+};
 
 searchForm.onsubmit = (event) => {
     event.preventDefault();
     console.log("search submit");
     searchPlaylist(search.value);
-}
+};
 
 search.oninput = () => {
     searchPlaylist(search.value);
-}
+};
 
-document.addEventListener('keydown', (event) => {
+document.addEventListener("keydown", (event) => {
     if (search !== document.activeElement) {
         event.preventDefault();
         switch (event.code) {
@@ -376,30 +376,30 @@ document.addEventListener('keydown', (event) => {
             case "ArrowUp":
                 if (player.volume < 0.95) {
                     updatePlayer("volume", {
-                        volume: player.volume + 0.05
+                        volume: player.volume + 0.05,
                     });
-                    slider.value = player.volume * 100;
+                    volumeSlider.value = player.volume * 100;
                     volumeValue.innerText = `${Math.round(player.volume * 100)}%`;
                 } else {
                     updatePlayer("volume", {
-                        volume: 1
+                        volume: 1,
                     });
-                    slider.value = player.volume * 100;
+                    volumeSlider.value = player.volume * 100;
                     volumeValue.innerText = `${Math.round(player.volume * 100)}%`;
                 }
                 break;
             case "ArrowDown":
                 if (player.volume > 0.05) {
                     updatePlayer("volume", {
-                        volume: player.volume - 0.05
+                        volume: player.volume - 0.05,
                     });
-                    slider.value = player.volume * 100;
+                    volumeSlider.value = player.volume * 100;
                     volumeValue.innerText = `${Math.round(player.volume * 100)}%`;
                 } else {
                     updatePlayer("volume", {
-                        volume: 0.01
+                        volume: 0.01,
                     });
-                    slider.value = player.volume * 100;
+                    volumeSlider.value = player.volume * 100;
                     volumeValue.innerText = `${Math.round(player.volume * 100)}%`;
                 }
                 break;
@@ -418,7 +418,7 @@ document.addEventListener('keydown', (event) => {
                 break;
         }
     }
-})
+});
 
 ipcRenderer.on("stream", (event, arg) => {
     coverImg.style.display = "initial";
@@ -426,109 +426,73 @@ ipcRenderer.on("stream", (event, arg) => {
     nowplaying.innerText = arg.title;
     nowplaying.onclick = () => {
         shell.openExternal(arg.youtube);
-    }
+    };
     player.src = arg.url;
     player.play();
-})
+});
 
 /**
  * @param {"change" | "volume" | "seek"} event
  * @param {{songNumber?: {number: number, playlist: string}, currentTime?: number, volume?: number}} param1
  */
-function updatePlayer(event, {
-    songNumber,
-    currentTime,
-    volume
-}) {
+function updatePlayer(event, { songNumber, currentTime, volume }) {
     switch (event) {
         case "change":
             if (current.playlist !== songNumber.playlist) played = [];
-            current = songNumber
+            current = songNumber;
             nowplaying.innerText = filter(songs.playlists[current.playlist][current.number]);
             nowplaying.onclick = () => {
                 if (current.playlist !== currentPlaylist.innerText) getplaylist(current.playlist);
                 nodes[current.number].focus();
-            }
+            };
 
             /**
              * @type {{title: string, artist: string, album: string, artwork: {src: string, type: string, sizes: string}[]}}
              */
             const trackInfo = {};
             trackInfo.title = nowplaying.innerText;
+            let songPath = "";
 
             if (current.playlist === path.parse(folder).base) {
-                let songPath = path.join(folder, songs.playlists[current.playlist][current.number]);
+                songPath = path.join(folder, songs.playlists[current.playlist][current.number]);
                 player.src = songPath.split("#").join("%23");
-                if (settings["metadata"].status) {
-                    musicMetadata.parseFile(songPath).then(data => {
-                        if (data.common.picture) {
-                            coverImg.src = `data:image/png;base64,${data.common.picture[0].data.toString("base64")}`
-                            coverImg.style.display = "initial";
-
-                            trackInfo.artwork = [
-                                {
-                                    src: `data:image/png;base64,${data.common.picture[0].data.toString("base64")}`
-                                }
-                            ]
-                        } else {
-                            coverImg.style.display = "none";
-                        }
-
-                        if (data.common.artist) {
-                            const artistName = document.createElement("p");
-                            artistName.className = "text-gray-500 font-normal text-sm";
-                            nowplaying.appendChild(artistName);
-                            artistName.innerText = data.common.artist;
-                            trackInfo.artist = data.common.artist;
-                        }
-                        let mediaMD = new MediaMetadata(trackInfo);
-
-                        // We assign our mediaMD to MediaSession.metadata property
-                        navigator.mediaSession.metadata = mediaMD
-                    })
-                }else{
-                    let mediaMD = new MediaMetadata(trackInfo);
-
-                    // We assign our mediaMD to MediaSession.metadata property
-                    navigator.mediaSession.metadata = mediaMD
-                }
             } else {
-                let songPath = path.join(folder, current.playlist, songs.playlists[current.playlist][current.number]);
+                songPath = path.join(folder, current.playlist, songs.playlists[current.playlist][current.number]);
                 player.src = songPath.split("#").join("%23");
-                if (settings["metadata"].status) {
-                    musicMetadata.parseFile(songPath).then(data => {
-                        if (data.common.picture) {
-                            coverImg.src = `data:image/png;base64,${data.common.picture[0].data.toString("base64")}`
-                            coverImg.style.display = "initial";
+            }
 
-                            trackInfo.artwork = [
-                                {
-                                    src: `data:image/png;base64,${data.common.picture[0].data.toString("base64")}`
-                                }
-                            ]
-                        } else {
-                            coverImg.style.display = "none";
-                        }
+            if (settings["metadata"].status) {
+                getMetadata(songPath).then((data) => {
+                    if (data.picture) {
+                        coverImg.src = `data:image/png;base64,${data.picture}`;
+                        coverImg.style.display = "initial";
 
-                        if (data.common.artist) {
-                            const artistName = document.createElement("p");
-                            artistName.className = "text-gray-500 font-normal text-sm";
-                            nowplaying.appendChild(artistName)
-                            artistName.innerText = data.common.artist;
-                            trackInfo.artist = data.common.artist;
-                        }
+                        trackInfo.artwork = [
+                            {
+                                src: `data:image/png;base64,${data.picture}`,
+                            },
+                        ];
+                    } else {
+                        coverImg.style.display = "none";
+                    }
 
-                        let mediaMD = new MediaMetadata(trackInfo);
-
-                        // We assign our mediaMD to MediaSession.metadata property
-                        navigator.mediaSession.metadata = mediaMD
-                    })
-                }else{
+                    if (data.artist) {
+                        const artistName = document.createElement("p");
+                        artistName.className = "text-gray-500 font-normal text-sm";
+                        nowplaying.appendChild(artistName);
+                        artistName.innerText = data.artist;
+                        trackInfo.artist = data.artist;
+                    }
                     let mediaMD = new MediaMetadata(trackInfo);
 
                     // We assign our mediaMD to MediaSession.metadata property
-                    navigator.mediaSession.metadata = mediaMD
-                }
+                    navigator.mediaSession.metadata = mediaMD;
+                });
+            } else {
+                let mediaMD = new MediaMetadata(trackInfo);
+
+                // We assign our mediaMD to MediaSession.metadata property
+                navigator.mediaSession.metadata = mediaMD;
             }
 
             if (!firstTime) player.play();
@@ -538,13 +502,13 @@ function updatePlayer(event, {
                 const dalyrics = fs.readFileSync(`${lyricsFolder}/${filter(songs.playlists[current.playlist][current.number])}.txt`, "utf-8");
                 ipcRenderer.send("updateLyrics", {
                     name: filter(songs.playlists[current.playlist][current.number]),
-                    lyrics: dalyrics
+                    lyrics: dalyrics,
                 });
                 lyricsHTML.innerText = dalyrics;
             } else {
                 ipcRenderer.send("updateLyrics", {
                     name: filter(songs.playlists[current.playlist][current.number]),
-                    lyrics: "Song doesn't have lyrics!"
+                    lyrics: "Song doesn't have lyrics!",
                 });
                 lyricsHTML.innerText = "Song doesn't have lyrics!";
             }
@@ -554,12 +518,12 @@ function updatePlayer(event, {
             //ipcRenderer.send("change", {name: songs.playlists[current.playlist][current.number], playlist: current.playlist});
 
             ipcRenderer.send("changeServer", {
-                current
+                current,
             });
             break;
         case "volume":
             player.volume = volume;
-            ipcRenderer.send("volumeChange", volume)
+            ipcRenderer.send("volumeChange", volume);
             fs.writeFileSync(path.join(savesPath, "volume.txt"), volume.toString());
             break;
         case "seek":
@@ -586,55 +550,61 @@ navigator.mediaDevices.addEventListener("devicechange", async () => {
         for (let i = 0; i < devices.length; i++) {
             const device = devices[i];
             if (device.kind === "audiooutput" && device.deviceId === "default") {
-                ipcRenderer.send("serverOutputChange", ({
+                ipcRenderer.send("serverOutputChange", {
                     label: device.label,
-                    deviceId: device.deviceId
-                }))
+                    deviceId: device.deviceId,
+                });
                 continue;
             }
         }
     }
-})
+});
 
 player.oncanplay = () => {
-    if(player.duration >= 3600) {
+    if (player.duration >= 3600) {
         const playerDurationHours = Math.floor(player.duration / 3600);
         const playerDurationMinutes = Math.floor(player.duration / 60) % 60;
         const playerDurationSeconds = Math.floor(player.duration) % 60;
-        timeValue.innerText = `${playerDurationHours > 9 ? playerDurationHours : `0${playerDurationHours}`}:${playerDurationMinutes > 9 ? playerDurationMinutes : `0${playerDurationMinutes}`}:${playerDurationSeconds > 9 ? playerDurationSeconds : `0${playerDurationSeconds}`}`;
-    }else{
+        timeValue.innerText = `${playerDurationHours > 9 ? playerDurationHours : `0${playerDurationHours}`}:${
+            playerDurationMinutes > 9 ? playerDurationMinutes : `0${playerDurationMinutes}`
+        }:${playerDurationSeconds > 9 ? playerDurationSeconds : `0${playerDurationSeconds}`}`;
+    } else {
         const playerDurationMinutes = Math.floor(player.duration / 60) % 60;
         const playerDurationSeconds = Math.floor(player.duration) % 60;
-        timeValue.innerText = `${playerDurationMinutes > 9 ? playerDurationMinutes : `0${playerDurationMinutes}`}:${playerDurationSeconds > 9 ? playerDurationSeconds : `0${playerDurationSeconds}`}`;
+        timeValue.innerText = `${playerDurationMinutes > 9 ? playerDurationMinutes : `0${playerDurationMinutes}`}:${
+            playerDurationSeconds > 9 ? playerDurationSeconds : `0${playerDurationSeconds}`
+        }`;
     }
-}
+};
 
 ipcRenderer.on("outputChange", (event, arg) => {
     player.pause();
-    player.setSinkId(arg)
+    player
+        .setSinkId(arg)
         .then(() => {
-            console.log('Audio output device attached: ' + arg);
+            console.log("Audio output device attached: " + arg);
             settings["output"].id = arg;
-            fs.writeFileSync(path.join(savesPath, 'settings.json'), JSON.stringify(settings));
+            fs.writeFileSync(path.join(savesPath, "settings.json"), JSON.stringify(settings));
             player.play();
 
-            ipcRenderer.send("serverOutputChange", ({
+            ipcRenderer.send("serverOutputChange", {
                 deviceId: arg,
-                label: "none"
-            }))
+                label: "none",
+            });
         })
         .catch(function (error) {
             console.error(error);
         });
-})
+});
 
 ipcRenderer.on("getOutputDevices", () => {
     let gotSaved = false;
     let payload = {
         devices: [],
-        current: ""
-    }
-    navigator.mediaDevices.enumerateDevices()
+        current: "",
+    };
+    navigator.mediaDevices
+        .enumerateDevices()
         .then((devices) => {
             for (let i = 0; i < devices.length; i++) {
                 const device = devices[i];
@@ -645,16 +615,16 @@ ipcRenderer.on("getOutputDevices", () => {
                     }
                     payload.devices.push({
                         deviceId: device.deviceId,
-                        label: device.label
+                        label: device.label,
                     });
                 }
             }
-            ipcRenderer.send("outputDevices", (payload));
+            ipcRenderer.send("outputDevices", payload);
         })
         .catch((err) => {
-            console.error(err)
-        })
-})
+            console.error(err);
+        });
+});
 
 ipcRenderer.on("lyrics", (event, arg) => {
     lyricsHTML.innerText = arg;
@@ -672,7 +642,7 @@ player.onvolumechange = () => {
         volumeValue.innerText = `${Math.round(player.volume * 100)}%`;
         ipcRenderer.send("mute", false);
     }
-}
+};
 
 player.onpause = () => {
     ipcRenderer.send("pause");
@@ -680,24 +650,23 @@ player.onpause = () => {
     pause.classList.remove("fa-circle-pause");
     pause.classList.add("fa-circle-play");
     navigator.mediaSession.playbackState = "paused";
-}
+};
 
 player.onplay = () => {
     ipcRenderer.send("play", {
         name: songs.playlists[current.playlist][current.number],
-        playlist: current.playlist
+        playlist: current.playlist,
     });
     // pause.innerText = "Pause";
     pause.classList.remove("fa-circle-play");
     pause.classList.add("fa-circle-pause");
     navigator.mediaSession.playbackState = "playing";
-}
+};
 
 player.onended = () => {
     if (!played.includes(current.number)) played.push(current.number);
 
     if (!shuffle.checked) {
-
         current.number++;
 
         if (doLoop === 1) {
@@ -709,13 +678,13 @@ player.onended = () => {
             } else {
                 current.number--;
                 played = [];
-                return
+                return;
             }
         }
     } else {
         const makeNumber = () => {
             return Math.floor(Math.random() * songs.playlists[current.playlist].length - 1);
-        }
+        };
 
         let number;
 
@@ -725,120 +694,175 @@ player.onended = () => {
                 played = [];
             } else {
                 played = [];
-                return
+                return;
             }
         } else {
             do {
-                number = makeNumber()
+                number = makeNumber();
             } while (played.includes(number) && number < 0);
             current.number = number;
         }
     }
 
-    console.log(played)
+    console.log(played);
     updatePlayer("change", {
-        songNumber: current
+        songNumber: current,
     });
+};
+
+let stoppedSearchTimer = true;
+let startedSearchTimer = false;
+let searchUpdatedLatest = 0;
+let searchTimer;
+
+function startCounting() {
+    startedSearchTimer = true;
+    stoppedSearchTimer = false;
+    searchTimer = setInterval(() => {
+        searchUpdatedLatest++;
+        console.log("holding");
+        if (searchUpdatedLatest == 4) {
+            commitSearch(search.value);
+            stopCount();
+        }
+    }, 250);
+}
+
+function stopCount() {
+    clearInterval(searchTimer);
+    console.log("stopped");
+    searchUpdatedLatest = 0;
+    stoppedSearchTimer = true;
+    startedSearchTimer = false;
+}
+
+function commitSearch(searchValue) {
+    let songsConut = 0;
+    for (let i = 0; i < songs.folders.length; i++) {
+        const songsFolder = songs.folders[i];
+
+        for (let j = 0; j < songs.playlists[songsFolder].length; j++) {
+            /**
+             * @type {string}
+             */
+            const song = songs.playlists[songsFolder][j];
+
+            if (song.toLowerCase().includes(searchValue.toLowerCase())) {
+                songsConut++;
+                const btn = document.createElement("button");
+                const songname = document.createElement("p");
+                const songDuration = document.createElement("p");
+                const songPhoto = document.createElement("img");
+                const artist = document.createElement("p");
+
+                songname.innerText = filter(song);
+                btn.style.gridTemplateColumns = "1fr auto";
+                btn.appendChild(songname);
+
+                if (settings["metadata"].status) {
+                    let songPath = "";
+
+                    if (songsFolder === path.parse(folder).base) {
+                        songPath = path.join(folder, songs.playlists[songsFolder][j]);
+                    } else {
+                        songPath = path.join(folder, songsFolder, songs.playlists[songsFolder][j]);
+                    }
+
+                    getMetadata(songPath).then((data) => {
+                        if (data.picture) {
+                            songPhoto.src = `data:image/png;base64,${data.picture}`;
+                            songPhoto.style.objectFit = "contain";
+                            songPhoto.className = "w-[35px] h-[35px] mr-1";
+                            btn.style.gridTemplateColumns = "auto 1fr auto";
+                            btn.insertBefore(songPhoto, songname);
+                        }
+
+                        if (data.duration) {
+                            if (data.duration > 3600) {
+                                songDuration.innerText = `${
+                                    Math.floor(data.duration / 3600) < 10
+                                        ? `0${Math.floor(data.duration / 3600)}`
+                                        : `${Math.floor(data.duration / 3600)}`
+                                }:${
+                                    Math.floor(data.duration / 60) % 60 < 10
+                                        ? `0${Math.floor(data.duration / 60) % 60}`
+                                        : `${Math.floor(data.duration / 60) % 60}`
+                                }:${
+                                    Math.floor(data.duration) % 60 < 10
+                                        ? `0${Math.floor(data.duration) % 60}`
+                                        : `${Math.floor(data.duration) % 60}`
+                                }`;
+                            } else {
+                                songDuration.innerText = `${
+                                    Math.floor(data.duration / 60) % 60 < 10
+                                        ? `0${Math.floor(data.duration / 60) % 60}`
+                                        : `${Math.floor(data.duration / 60) % 60}`
+                                }:${
+                                    Math.floor(data.duration) % 60 < 10
+                                        ? `0${Math.floor(data.duration) % 60}`
+                                        : `${Math.floor(data.duration) % 60}`
+                                }`;
+                            }
+                            btn.appendChild(songDuration);
+                        }
+
+                        if (data.artist) {
+                            artist.innerText = data.artist;
+                            artist.className = "text-gray-500 font-normal";
+                            songname.appendChild(artist);
+                        }
+                    });
+                }
+
+                btn.onclick = () => {
+                    updatePlayer("change", {
+                        songNumber: {
+                            number: j,
+                            playlist: songsFolder,
+                        },
+                    });
+                };
+                btn.oncontextmenu = (e) => {
+                    console.log("right click on " + btn.textContent);
+                    ipcRenderer.send("makeSongMenu", {
+                        name: song,
+                        playlist: songsFolder,
+                        number: j,
+                        addShow: true,
+                    });
+                };
+                btn.id = "removable";
+                btn.className =
+                    "grid px-2 text-left py-1 w-full text-sm text-gray-300 font-medium rounded-md hover:text-white hover:bg-white hover:bg-opacity-20 hover:border-transparent focus:border";
+                htmlsongs.appendChild(btn);
+
+                nodes.push(btn);
+            }
+        }
+    }
+    plinfo.innerText = `found ${songsConut} songs`;
+    pltime.innerText = "";
 }
 
 /**
- * 
- * @param {string} searchValue 
+ *
+ * @param {string} searchValue
  */
 function searchPlaylist(searchValue) {
-    console.log(`Starting search for ${searchValue}`);
+    // console.log(`Starting search for ${searchValue}`);
 
     if (searchValue === "") {
         getplaylist(latestPlaylist);
+        if (!stoppedSearchTimer)
+            stopCount();
     } else {
-        currentPlaylist.innerText = "Search results"
+        currentPlaylist.innerText = "Search results";
         removePlaylist();
 
-        let songsConut = 0;
-        for (let i = 0; i < songs.folders.length; i++) {
-            const songsFolder = songs.folders[i];
+        searchUpdatedLatest = 0;
 
-            for (let j = 0; j < songs.playlists[songsFolder].length; j++) {
-                /**
-                 * @type {string}
-                 */
-                const song = songs.playlists[songsFolder][j];
-
-                if (song.toLowerCase().includes(searchValue.toLowerCase())) {
-
-                    songsConut++;
-                    const btn = document.createElement("button");
-                    const songname = document.createElement("p");
-                    const songDuration = document.createElement("p");
-                    const songPhoto = document.createElement("img");
-                    const artist = document.createElement("p");
-
-                    songname.innerText = filter(song);
-                    btn.style.gridTemplateColumns = "1fr auto";
-                    btn.appendChild(songname);
-
-                    if (settings["metadata"].status) {
-                        let songPath = ""
-
-                        if (songsFolder === path.parse(folder).base) {
-                            songPath = path.join(folder, songs.playlists[songsFolder][j]);
-                        } else {
-                            songPath = path.join(folder, songsFolder, songs.playlists[songsFolder][j]);
-                        }
-
-                        musicMetadata.parseFile(songPath).then(data => {
-                            if (data.common.picture) {
-                                songPhoto.src = `data:image/png;base64,${data.common.picture[0].data.toString("base64")}`;
-                                songPhoto.style.objectFit = "contain"
-                                songPhoto.className = "w-[35px] h-[35px] mr-1"
-                                btn.style.gridTemplateColumns = "auto 1fr auto";
-                                btn.insertBefore(songPhoto, songname);
-                            }
-
-                            if (data.format.duration) {
-                                if (data.format.duration > 3600) {
-                                    songDuration.innerText = `${Math.floor(data.format.duration / 3600) < 10 ? `0${Math.floor(data.format.duration / 3600)}` : `${Math.floor(data.format.duration / 3600)}`}:${Math.floor(data.format.duration / 60) % 60 < 10 ? `0${Math.floor(data.format.duration / 60) % 60}` : `${Math.floor(data.format.duration / 60) % 60}`}:${Math.floor(data.format.duration) % 60 < 10 ? `0${Math.floor(data.format.duration) % 60}` : `${Math.floor(data.format.duration) % 60}`}`;
-                                } else {
-                                    songDuration.innerText = `${Math.floor(data.format.duration / 60) % 60 < 10 ? `0${Math.floor(data.format.duration / 60) % 60}` : `${Math.floor(data.format.duration / 60) % 60}`}:${Math.floor(data.format.duration) % 60 < 10 ? `0${Math.floor(data.format.duration) % 60}` : `${Math.floor(data.format.duration) % 60}`}`;
-                                }
-                                btn.appendChild(songDuration);
-                            }
-
-                            if (data.common.artist) {
-                                artist.innerText = data.common.artist
-                                artist.className = "text-gray-500 font-normal"
-                                songname.appendChild(artist);
-                            }
-                        });
-                    }
-
-                    btn.onclick = () => {
-                        updatePlayer("change", {
-                            songNumber: {
-                                number: j,
-                                playlist: songsFolder
-                            }
-                        });
-                    }
-                    btn.oncontextmenu = (e) => {
-                        console.log("right click on " + btn.textContent);
-                        ipcRenderer.send("makeSongMenu", {
-                            name: song,
-                            playlist: songsFolder,
-                            number: j,
-                            addShow: true
-                        });
-                    }
-                    btn.id = "removable";
-                    btn.className = "grid px-2 text-left py-1 w-full text-sm text-gray-300 font-medium rounded-md hover:text-white hover:bg-white hover:bg-opacity-20 hover:border-transparent focus:border"
-                    htmlsongs.appendChild(btn);
-
-                    nodes.push(btn);
-                }
-            }
-        }
-        plinfo.innerText = `found ${songsConut} songs`;
-        pltime.innerText = "";
+        if(!startedSearchTimer)
+            startCounting();
     }
 }
 
@@ -846,7 +870,7 @@ ipcRenderer.on("showSong", (event, data) => {
     search.value = "";
     getplaylist(data.playlist);
     nodes[data.number].focus();
-})
+});
 
 function nextSong() {
     if (!played.includes(current.number)) played.push(current.number);
@@ -861,13 +885,13 @@ function nextSong() {
             } else {
                 current.number--;
                 played = [];
-                return
+                return;
             }
         }
     } else {
         const makeNumber = () => {
             return parseInt(Math.random() * songs.playlists[current.playlist].length);
-        }
+        };
 
         let number;
 
@@ -878,24 +902,24 @@ function nextSong() {
                 played = [];
             } else {
                 played = [];
-                return
+                return;
             }
         } else {
             do {
-                number = makeNumber()
-            } while (played.includes(number));
+                number = makeNumber();
+            } while (played.includes(number) && number < songs.playlists[current.playlist].length);
             current.number = number;
         }
     }
 
-    console.log(played)
+    console.log(played);
     updatePlayer("change", {
-        songNumber: current
+        songNumber: current,
     });
 }
 
 function previousSong() {
-    const shuffleSong = played.pop()
+    const shuffleSong = played.pop();
 
     if (!shuffle.checked) {
         current.number--;
@@ -905,21 +929,21 @@ function previousSong() {
                 current.number = songs.playlists[current.playlist].length - 1;
             } else {
                 current.number++;
-                return
+                return;
             }
         }
     } else {
         if (shuffleSong !== undefined) {
-            current.number = shuffleSong
+            current.number = shuffleSong;
         } else {
-            return
+            return;
         }
     }
 
-    console.log(played)
+    console.log(played);
 
     updatePlayer("change", {
-        songNumber: current
+        songNumber: current,
     });
 }
 
@@ -933,17 +957,19 @@ function changeTimelinePosition() {
         const hours = Math.floor(player.currentTime / 3600);
         const minutes = Math.floor(player.currentTime / 60) % 60;
         const seconds = Math.floor(player.currentTime) % 60;
-        currentTime.innerText = `${hours > 9 ? hours : `0${hours}`}:${minutes > 9 ? minutes : `0${minutes}`}:${seconds > 9 ? seconds : `0${seconds}`}`
+        currentTime.innerText = `${hours > 9 ? hours : `0${hours}`}:${minutes > 9 ? minutes : `0${minutes}`}:${
+            seconds > 9 ? seconds : `0${seconds}`
+        }`;
     } else {
         const minutes = Math.floor(player.currentTime / 60) % 60;
         const seconds = Math.floor(player.currentTime) % 60;
-        currentTime.innerText = `${minutes > 9 ? minutes : `0${minutes}`}:${seconds > 9 ? seconds : `0${seconds}`}`
+        currentTime.innerText = `${minutes > 9 ? minutes : `0${minutes}`}:${seconds > 9 ? seconds : `0${seconds}`}`;
     }
 
     ipcRenderer.send("timeLineSend", {
         currentTime: player.currentTime,
-        fullTime: player.duration
-    })
+        fullTime: player.duration,
+    });
 }
 
 player.ontimeupdate = changeTimelinePosition;
@@ -955,31 +981,31 @@ async function setupPlayer() {
         case "one":
             loop.style.color = "#175aa2";
             loopOne.classList.remove("invisible");
-            doLoop = 1
+            doLoop = 1;
             break;
         case "all":
             loop.style.color = "#175aa2";
             loopOne.classList.add("invisible");
-            doLoop = 2
+            doLoop = 2;
             break;
         case "0":
             loop.style.color = "#FFFFFF";
             loopOne.classList.add("invisible");
-            doLoop = 0
+            doLoop = 0;
             break;
     }
 
-    shuffle.checked = settings["shuffle"].status
+    shuffle.checked = settings["shuffle"].status;
 
     const volumefile = fs.readFileSync(path.join(savesPath, "volume.txt"), "utf-8");
     const volume = parseFloat(volumefile);
 
     player.volume = volume;
-    slider.value = volume * 100;
+    volumeSlider.value = volume * 100;
     volumeValue.innerText = `${Math.round(volume * 100)}%`;
 
     updatePlayer("change", {
-        songNumber: current
+        songNumber: current,
     });
 
     if (!settings["output"]) {
@@ -987,11 +1013,12 @@ async function setupPlayer() {
         for (let i = 0; i < devices.length; i++) {
             const device = devices[i];
             if (device.kind === "audiooutput" && device.label.startsWith("Default")) {
-                player.setSinkId(device.deviceId)
+                player
+                    .setSinkId(device.deviceId)
                     .then(() => {
-                        console.log('Audio output device attached: ' + device.deviceId);
+                        console.log("Audio output device attached: " + device.deviceId);
                         settings["output"] = {
-                            "id": ""
+                            id: "",
                         };
                         settings["output"].id = device.deviceId;
                         settings = fs.writeFileSync(path.join(savesPath, "settings.json"), JSON.stringify(settings));
@@ -1004,9 +1031,10 @@ async function setupPlayer() {
             }
         }
     } else {
-        player.setSinkId(settings["output"].id)
+        player
+            .setSinkId(settings["output"].id)
             .then(() => {
-                console.log('Audio output device attached: ' + settings["output"].id);
+                console.log("Audio output device attached: " + settings["output"].id);
             })
             .catch(function (error) {
                 console.error(error);
@@ -1015,8 +1043,8 @@ async function setupPlayer() {
 }
 
 /**
- * 
- * @param {string} plname 
+ *
+ * @param {string} plname
  */
 function getplaylist(plname) {
     search.value = "";
@@ -1040,7 +1068,7 @@ function getplaylist(plname) {
         btn.appendChild(songname);
 
         if (settings["metadata"].status) {
-            let songPath = ""
+            let songPath = "";
 
             if (plname === path.parse(folder).base) {
                 songPath = path.join(folder, songs.playlists[plname][i]);
@@ -1048,31 +1076,49 @@ function getplaylist(plname) {
                 songPath = path.join(folder, plname, songs.playlists[plname][i]);
             }
 
-            musicMetadata.parseFile(songPath).then(data => {
-                if (data.common.picture) {
-                    songPhoto.src = `data:image/png;base64,${data.common.picture[0].data.toString("base64")}`;
-                    songPhoto.style.objectFit = "contain"
-                    songPhoto.className = "w-[35px] h-[35px] mr-1"
+            getMetadata(songPath).then((data) => {
+                if (data.picture) {
+                    songPhoto.src = `data:image/png;base64,${data.picture}`;
+                    songPhoto.style.objectFit = "contain";
+                    songPhoto.className = "w-[35px] h-[35px] mr-1";
                     btn.style.gridTemplateColumns = "auto 1fr auto";
                     btn.insertBefore(songPhoto, songname);
                 }
 
-                if (data.format.duration) {
-                    playlistLength += data.format.duration;
+                if (data.duration) {
+                    playlistLength += data.duration;
 
-                    if (data.format.duration > 3600) {
-                        songDuration.innerText = `${Math.floor(data.format.duration / 3600) < 10 ? `0${Math.floor(data.format.duration / 3600)}` : `${Math.floor(data.format.duration / 3600)}`}:${Math.floor(data.format.duration / 60) % 60 < 10 ? `0${Math.floor(data.format.duration / 60) % 60}` : `${Math.floor(data.format.duration / 60) % 60}`}:${Math.floor(data.format.duration) % 60 < 10 ? `0${Math.floor(data.format.duration) % 60}` : `${Math.floor(data.format.duration) % 60}`}`;
+                    if (data.duration > 3600) {
+                        songDuration.innerText = `${
+                            Math.floor(data.duration / 3600) < 10
+                                ? `0${Math.floor(data.duration / 3600)}`
+                                : `${Math.floor(data.duration / 3600)}`
+                        }:${
+                            Math.floor(data.duration / 60) % 60 < 10
+                                ? `0${Math.floor(data.duration / 60) % 60}`
+                                : `${Math.floor(data.duration / 60) % 60}`
+                        }:${Math.floor(data.duration) % 60 < 10 ? `0${Math.floor(data.duration) % 60}` : `${Math.floor(data.duration) % 60}`}`;
                     } else {
-                        songDuration.innerText = `${Math.floor(data.format.duration / 60) % 60 < 10 ? `0${Math.floor(data.format.duration / 60) % 60}` : `${Math.floor(data.format.duration / 60) % 60}`}:${Math.floor(data.format.duration) % 60 < 10 ? `0${Math.floor(data.format.duration) % 60}` : `${Math.floor(data.format.duration) % 60}`}`;
+                        songDuration.innerText = `${
+                            Math.floor(data.duration / 60) % 60 < 10
+                                ? `0${Math.floor(data.duration / 60) % 60}`
+                                : `${Math.floor(data.duration / 60) % 60}`
+                        }:${Math.floor(data.duration) % 60 < 10 ? `0${Math.floor(data.duration) % 60}` : `${Math.floor(data.duration) % 60}`}`;
                     }
                     btn.appendChild(songDuration);
                 }
 
-                pltime.innerText = `, ${Math.floor(playlistLength / 3600) < 10 ? `0${Math.floor(playlistLength / 3600)}` : `${Math.floor(playlistLength / 3600)}`}:${Math.floor(playlistLength / 60) % 60 < 10 ? `0${Math.floor(playlistLength / 60) % 60}` : `${Math.floor(playlistLength / 60) % 60}`}:${Math.floor(playlistLength) % 60 < 10 ? `0${Math.floor(playlistLength) % 60}` : `${Math.floor(playlistLength) % 60}`}`
+                pltime.innerText = `, ${
+                    Math.floor(playlistLength / 3600) < 10 ? `0${Math.floor(playlistLength / 3600)}` : `${Math.floor(playlistLength / 3600)}`
+                }:${
+                    Math.floor(playlistLength / 60) % 60 < 10
+                        ? `0${Math.floor(playlistLength / 60) % 60}`
+                        : `${Math.floor(playlistLength / 60) % 60}`
+                }:${Math.floor(playlistLength) % 60 < 10 ? `0${Math.floor(playlistLength) % 60}` : `${Math.floor(playlistLength) % 60}`}`;
 
-                if (data.common.artist) {
-                    artist.innerText = data.common.artist
-                    artist.className = "text-gray-500 font-normal"
+                if (data.artist) {
+                    artist.innerText = data.artist;
+                    artist.className = "text-gray-500 font-normal";
                     songname.appendChild(artist);
                 }
             });
@@ -1082,21 +1128,22 @@ function getplaylist(plname) {
             updatePlayer("change", {
                 songNumber: {
                     number: i,
-                    playlist: plname
-                }
+                    playlist: plname,
+                },
             });
-        }
+        };
         btn.oncontextmenu = (e) => {
             console.log("right click on ", songName, i);
             ipcRenderer.send("makeSongMenu", {
                 name: songName,
                 playlist: plname,
                 number: i,
-                addShow: false
+                addShow: false,
             });
-        }
+        };
         btn.id = "removable";
-        btn.className = "grid px-2 text-left py-1 w-full text-sm text-gray-300 font-medium rounded-md hover:text-white hover:bg-white hover:bg-opacity-20 hover:border-transparent focus:border"
+        btn.className =
+            "grid px-2 text-left py-1 w-full text-sm text-gray-300 font-medium rounded-md hover:text-white hover:bg-white hover:bg-opacity-20 hover:border-transparent focus:border";
         htmlsongs.appendChild(btn);
 
         nodes.push(btn);
@@ -1104,7 +1151,7 @@ function getplaylist(plname) {
 
     latestPlaylist = plname;
     currentPlaylist.innerText = plname;
-    plinfo.innerText = `${songsCount} songs`
+    plinfo.innerText = `${songsCount} songs`;
 
     for (let i = 0; i < playlistshtml.length; i++) {
         /**
@@ -1112,11 +1159,9 @@ function getplaylist(plname) {
          */
         const element = playlistshtml[i];
         if (element.innerText === plname) {
-            if (!element.classList.contains("clicked"))
-                element.classList.add("clicked");
+            if (!element.classList.contains("clicked")) element.classList.add("clicked");
         } else {
-            if (element.classList.contains("clicked"))
-                element.classList.remove("clicked");
+            if (element.classList.contains("clicked")) element.classList.remove("clicked");
         }
     }
 }
@@ -1128,14 +1173,14 @@ function removePlaylist() {
             htmlsongs.removeChild(element);
         }
     }
-    nodes = []
+    nodes = [];
 }
 
 function makegallery() {
-    getGallery(folder).then(desongs => {
+    getGallery(folder).then((desongs) => {
         songs = desongs;
 
-        playlist.innerHTML = '';
+        playlist.innerHTML = "";
         playlistshtml = [];
 
         for (let i = 0; i < songs.folders.length; i++) {
@@ -1150,11 +1195,11 @@ function makegallery() {
             btn.oncontextmenu = (e) => {
                 console.log("right click on " + btn.textContent);
                 ipcRenderer.send("makePlaylistMenu", {
-                    name: element
+                    name: element,
                 });
-            }
+            };
 
-            btn.className = "py-[2px] text-left font-medium text-sm text-gray-500 hover:text-white focus:text-gray-300"
+            btn.className = "py-[2px] text-left font-medium text-sm text-gray-500 hover:text-white focus:text-gray-300";
 
             if (element === latestPlaylist) btn.classList.add("clicked");
 
@@ -1183,23 +1228,19 @@ function makegallery() {
 }
 
 /**
- * 
- * @param {string} file 
+ *
+ * @param {string} file
  * @returns {boolean}
  */
 const isAudio = (file) => {
-    return file.endsWith(".mp3") ||
-        file.endsWith(".flac") ||
-        file.endsWith(".m4a") ||
-        file.endsWith(".wav") ||
-        file.endsWith(".ogg")
-}
+    return file.endsWith(".mp3") || file.endsWith(".flac") || file.endsWith(".m4a") || file.endsWith(".wav") || file.endsWith(".ogg");
+};
 
 //drag and drop methods
 document.addEventListener("dragover", (e) => {
     e.stopPropagation();
     e.preventDefault();
-})
+});
 
 document.addEventListener("drop", (e) => {
     e.stopPropagation();
@@ -1214,21 +1255,55 @@ document.addEventListener("drop", (e) => {
 
     if (isAudio(files[0].name)) {
         if (settings["metadata"].status) {
-            musicMetadata.parseFile(filePath).then(data => {
-                if (data.common.picture) {
-                    coverImg.src = `data:image/png;base64,${data.common.picture[0].data.toString("base64")}`
+            getMetadata(files[0].path).then((data) => {
+                if (data.picture) {
+                    coverImg.src = `data:image/png;base64,${data.picture}`;
                     coverImg.style.display = "initial";
                 } else {
                     coverImg.style.display = "none";
                 }
-            })
+
+                if (data.artist) {
+                    const artistName = document.createElement("p");
+                    artistName.className = "text-gray-500 font-normal text-sm";
+                    nowplaying.appendChild(artistName);
+                    artistName.innerText = data.artist;
+                    trackInfo.artist = data.artist;
+                }
+            });
         }
         nowplaying.innerText = filter(files[0].name);
         const parsedPath = path.parse(filePath);
         nowplaying.onclick = () => {
             shell.openPath(parsedPath.dir);
-        }
+        };
         player.src = filePath;
         player.play();
     }
-})
+});
+
+/**
+ *
+ * @param {string} songPath
+ */
+async function getMetadata(songPath) {
+    const data = await musicMetadata.parseFile(songPath);
+    /**
+     * @type {songMetadata}
+     */
+    let returnData = {};
+
+    if (data.common.picture) {
+        returnData.picture = data.common.picture[0].data.toString("base64");
+    }
+
+    if (data.format.duration) {
+        returnData.duration = data.format.duration;
+    }
+
+    if (data.common.artist) {
+        returnData.artist = data.common.artist;
+    }
+
+    return returnData;
+}
